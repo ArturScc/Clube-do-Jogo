@@ -42,6 +42,7 @@ interface RankingItem {
 
 export default function Home() {
   const supabase = createClient();
+  const DEFAULT_RATING_PERCENT = 50;
   const [user, setUser] = useState<any>(null);
   const [profile, setProfile] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -190,8 +191,8 @@ export default function Home() {
   };
 
   const getRatingMultiplier = (rating?: number | null): number => {
-    if (!rating || rating <= 0) return 1;
-    return rating / 100;
+    const ratingForScore = rating && rating > 0 ? rating : DEFAULT_RATING_PERCENT;
+    return ratingForScore / 100;
   };
 
   const getTotalPoints = (votesCount: number, playtimePoints: number, rating?: number | null, completedCount = 0): number => {
@@ -754,7 +755,7 @@ export default function Home() {
                             <div className="text-xs">
                               <strong className="text-emerald-400 font-extrabold text-sm">{item.totalPoints}</strong>
                               <span className="text-neutral-500 font-medium text-[10px] ml-1">
-                                pts ({item.votesCount} {item.votesCount === 1 ? 'voto' : 'votos'}, {item.completedCount} {item.completedCount === 1 ? 'zerou' : 'zeraram'})
+                                pts ({item.votesCount} {item.votesCount === 1 ? 'voto' : 'votos'}, {item.completedCount} {item.completedCount === 1 ? 'zerou' : 'zeraram'}, {item.game.average_rating ? `${Math.round(item.game.average_rating)}%` : 'sem nota'})
                               </span>
                             </div>
 
