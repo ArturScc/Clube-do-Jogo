@@ -9,6 +9,7 @@ import { deleteNote, loadNotes, saveNote } from '@/lib/local-notes';
 import { formatDate, formatTime } from '@/lib/utils';
 import { useApp } from './app-provider';
 import { Skeleton } from './ui/skeleton';
+import { ImageGalleryDialog } from './game-gallery';
 
 function dateKey(value: string) {
   return new Intl.DateTimeFormat('pt-BR', { year: 'numeric', month: '2-digit', day: '2-digit', timeZone: 'America/Fortaleza' }).format(new Date(value));
@@ -23,6 +24,9 @@ export function NotesChat({ game }: { game: Game }) {
   const [editingId, setEditingId] = useState<string | null>(null);
   const [menuNoteId, setMenuNoteId] = useState<string | null>(null);
   const [imageError, setImageError] = useState('');
+  const [galleryOpen, setGalleryOpen] = useState(false);
+  const [galleryIndex, setGalleryIndex] = useState(0);
+  const [gallerySession, setGallerySession] = useState(0);
   const virtuosoRef = useRef<VirtuosoHandle>(null);
   const holdTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -84,6 +88,7 @@ export function NotesChat({ game }: { game: Game }) {
   }
 
   if (loading) return <div className="space-y-3 p-4"><Skeleton className="h-16 w-3/4" /><Skeleton className="ml-auto h-24 w-4/5" /><Skeleton className="h-20 w-2/3" /></div>;
+  const noteImages = notes.flatMap(note => note.imageDataUrl ? [note.imageDataUrl] : []);
 
   return (
     <div className="overflow-hidden rounded-3xl border border-white/8 bg-[radial-gradient(circle_at_20%_0%,rgba(124,58,237,.08),transparent_45%),#0c0c0f]">
@@ -104,7 +109,7 @@ export function NotesChat({ game }: { game: Game }) {
                         <DropdownMenu.Item onSelect={() => void remove(note.id)} className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-xs font-bold text-red-300 outline-none data-[highlighted]:bg-red-500/10"><Trash2 className="size-3.5" />Excluir</DropdownMenu.Item>
                       </DropdownMenu.Content></DropdownMenu.Portal>
                     </DropdownMenu.Root>
-                    {note.imageDataUrl && <img src={note.imageDataUrl} alt="Imagem anexada à anotação" className="max-h-72 w-full object-cover" />}
+                    {note.imageDataUrl && <button onClick={() => { setGalleryIndex(noteImages.indexOf(note.imageDataUrl!)); setGallerySession(session => session + 1); setGalleryOpen(true); }} onPointerDown={event => event.stopPropagation()} onPointerUp={event => event.stopPropagation()} className="group relative block w-full cursor-zoom-in overflow-hidden"><img src={note.imageDataUrl} alt="Abrir imagem anexada à anotação" className="max-h-72 w-full object-cover transition duration-200 group-hover:scale-[1.02]" /><span className="pointer-events-none absolute inset-0 bg-black/0 transition group-hover:bg-black/10" /></button>}
                     {(note.body || !note.imageDataUrl) && <p className="whitespace-pre-wrap break-words pb-2 pl-3 pr-12 pt-4 text-sm leading-relaxed text-zinc-100">{note.body}</p>}
                     <div className="flex items-center justify-end gap-1 px-3 pb-2 text-[9px] text-violet-200/45">{note.updatedAt !== note.createdAt && 'editada · '}{formatTime(note.createdAt)}<Check className="size-3" /></div>
                   </div>
@@ -128,6 +133,7 @@ export function NotesChat({ game }: { game: Game }) {
           </>
         )}
       </div>
+      <ImageGalleryDialog key={gallerySession} title="anotações" images={noteImages} open={galleryOpen} onOpenChange={setGalleryOpen} activeIndex={galleryIndex} onActiveIndexChange={setGalleryIndex} />
     </div>
   );
 }
