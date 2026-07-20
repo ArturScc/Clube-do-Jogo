@@ -39,6 +39,14 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'ranking' | 'backlog'>('ranking');
   
+  // Auth states
+  const [authMethod, setAuthMethod] = useState<'google' | 'email'>('google');
+  const [authMode, setAuthMode] = useState<'login' | 'signup'>('login');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [authErrorMsg, setAuthErrorMsg] = useState('');
+  const [authLoadingState, setAuthLoadingState] = useState(false);
+  
   // Backlog state
   const [backlog, setBacklog] = useState<Game[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
@@ -122,12 +130,53 @@ export default function Home() {
   }, [user, activeTab]);
 
   const handleLogin = async () => {
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
-      },
-    });
+    setAuthErrorMsg('');
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
+      });
+      if (error) throw error;
+    } catch (err: any) {
+      setAuthErrorMsg(err.message || 'Erro ao iniciar Google Login.');
+    }
+  };
+
+  const handleEmailAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.trim() || !password.trim()) {
+      setAuthErrorMsg('Preencha todos os campos.');
+      return;
+    }
+    setAuthLoadingState(true);
+    setAuthErrorMsg('');
+    try {
+      if (authMode === 'login') {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) throw error;
+      } else {
+        const { error } = await supabase.auth.signUp({
+          email,
+          password,
+          options: {
+            data: {
+              name: email.split('@')[0],
+            }
+          }
+        });
+        if (error) throw error;
+        alert('Cadastro realizado com sucesso! Caso tenha ativado confirmação de e-mail, verifique sua caixa de entrada.');
+      }
+    } catch (err: any) {
+      setAuthErrorMsg(err.message || 'Erro de autenticação.');
+    } finally {
+      setAuthLoadingState(false);
+    }
   };
 
   const handleLogout = async () => {
@@ -358,37 +407,131 @@ export default function Home() {
 
         {/* Card de Login Glassmorphism */}
         <div className="my-auto bg-neutral-900/40 border border-neutral-800/80 rounded-3xl p-8 backdrop-blur-xl z-10 shadow-2xl">
-          <h2 className="text-xl font-bold text-center mb-6">Boas-vindas, Jogador!</h2>
+          <h2 className="text-xl font-bold text-center mb-6">
+            {authMethod === 'google' 
+              ? 'Boas-vindas, Jogador!' 
+              : authMode === 'login' ? 'Entrar com E-mail' : 'Criar Nova Conta'}
+          </h2>
           
-          <button 
-            onClick={handleLogin}
-            className="w-full flex items-center justify-center gap-3 bg-white text-neutral-950 font-bold py-3.5 px-6 rounded-2xl transition hover:bg-neutral-100 active:scale-[0.98] shadow-md shadow-white/5"
-          >
-            {/* Google Icon SVG */}
-            <svg className="w-5 h-5" viewBox="0 0 24 24">
-              <path
-                fill="#4285F4"
-                d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v3.92h6.69a5.74 5.74 0 0 1-2.49 3.77v3.12h3.99c2.34-2.16 3.69-5.32 3.69-8.74z"
-              />
-              <path
-                fill="#34A853"
-                d="M12 24c3.24 0 5.97-1.08 7.96-2.91l-3.99-3.12c-1.12.75-2.54 1.19-3.97 1.19-3.05 0-5.63-2.06-6.55-4.83H1.31v3.22A12.01 12.01 0 0 0 12 24z"
-              />
-              <path
-                fill="#FBBC05"
-                d="M5.45 14.33a7.14 7.14 0 0 1 0-4.66V6.45H1.31a12.01 12.01 0 0 0 0 11.1l4.14-3.22z"
-              />
-              <path
-                fill="#EA4335"
-                d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.96 1.19 15.24 0 12 0 7.33 0 3.31 2.67 1.31 6.45l4.14 3.22c.92-2.77 3.5-4.83 6.55-4.83z"
-              />
-            </svg>
-            Entrar com o Google
-          </button>
-          
+          {authErrorMsg && (
+            <div className="mb-4 p-3 bg-red-950/40 border border-red-800/30 text-red-300 text-xs rounded-xl text-center">
+              {authErrorMsg}
+            </div>
+          )}
+
+          {authMethod === 'google' ? (
+            <div className="flex flex-col gap-4">
+              <button 
+                onClick={handleLogin}
+                className="w-full flex items-center justify-center gap-3 bg-white text-neutral-950 font-bold py-3.5 px-6 rounded-2xl transition hover:bg-neutral-100 active:scale-[0.98] shadow-md shadow-white/5"
+              >
+                {/* Google Icon SVG */}
+                <svg className="w-5 h-5" viewBox="0 0 24 24">
+                  <path
+                    fill="#4285F4"
+                    d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v3.92h6.69a5.74 5.74 0 0 1-2.49 3.77v3.12h3.99c2.34-2.16 3.69-5.32 3.69-8.74z"
+                  />
+                  <path
+                    fill="#34A853"
+                    d="M12 24c3.24 0 5.97-1.08 7.96-2.91l-3.99-3.12c-1.12.75-2.54 1.19-3.97 1.19-3.05 0-5.63-2.06-6.55-4.83H1.31v3.22A12.01 12.01 0 0 0 12 24z"
+                  />
+                  <path
+                    fill="#FBBC05"
+                    d="M5.45 14.33a7.14 7.14 0 0 1 0-4.66V6.45H1.31a12.01 12.01 0 0 0 0 11.1l4.14-3.22z"
+                  />
+                  <path
+                    fill="#EA4335"
+                    d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.96 1.19 15.24 0 12 0 7.33 0 3.31 2.67 1.31 6.45l4.14 3.22c.92-2.77 3.5-4.83 6.55-4.83z"
+                  />
+                </svg>
+                Entrar com o Google
+              </button>
+
+              <div className="relative my-2 flex items-center justify-center">
+                <div className="absolute inset-0 flex items-center"><div className="w-full border-t border-neutral-800"></div></div>
+                <span className="relative bg-neutral-950 px-3 text-[10px] text-neutral-500 font-bold uppercase tracking-wider">Ou se preferir</span>
+              </div>
+
+              <button 
+                onClick={() => {
+                  setAuthMethod('email');
+                  setAuthErrorMsg('');
+                }}
+                className="w-full bg-neutral-900 border border-neutral-800 text-neutral-300 font-bold py-3.5 px-6 rounded-2xl transition hover:bg-neutral-850 active:scale-[0.98] text-sm"
+              >
+                Entrar com E-mail e Senha
+              </button>
+            </div>
+          ) : (
+            <form onSubmit={handleEmailAuth} className="flex flex-col gap-4">
+              <div>
+                <label className="block text-[10px] uppercase font-bold text-neutral-400 mb-1.5 tracking-wider">E-mail</label>
+                <input 
+                  type="email" 
+                  required
+                  placeholder="seuemail@exemplo.com"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl py-3 px-4 text-sm focus:outline-none focus:border-violet-500 transition text-neutral-200"
+                />
+              </div>
+
+              <div>
+                <label className="block text-[10px] uppercase font-bold text-neutral-400 mb-1.5 tracking-wider">Senha</label>
+                <input 
+                  type="password" 
+                  required
+                  placeholder="••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="w-full bg-neutral-950 border border-neutral-800 rounded-xl py-3 px-4 text-sm focus:outline-none focus:border-violet-500 transition text-neutral-200"
+                />
+              </div>
+
+              <button 
+                type="submit"
+                disabled={authLoadingState}
+                className="w-full bg-violet-600 hover:bg-violet-700 text-white font-bold py-3.5 px-6 rounded-2xl transition active:scale-[0.98] disabled:opacity-50 text-sm flex items-center justify-center gap-2"
+              >
+                {authLoadingState ? (
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                ) : authMode === 'login' ? (
+                  'Entrar'
+                ) : (
+                  'Cadastrar e Entrar'
+                )}
+              </button>
+
+              <div className="flex flex-col gap-3 text-center mt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMode(authMode === 'login' ? 'signup' : 'login');
+                    setAuthErrorMsg('');
+                  }}
+                  className="text-xs text-violet-400 hover:underline font-medium"
+                >
+                  {authMode === 'login' 
+                    ? 'Não tem uma conta? Cadastre-se' 
+                    : 'Já tem uma conta? Faça Login'}
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => {
+                    setAuthMethod('google');
+                    setAuthErrorMsg('');
+                  }}
+                  className="text-xs text-neutral-400 hover:text-white transition"
+                >
+                  ← Voltar para o Google Login
+                </button>
+              </div>
+            </form>
+          )}
+
           <div className="mt-6 flex flex-col gap-3 text-xs text-neutral-500 text-center leading-relaxed">
-            <p>Apenas membros cadastrados e autorizados.</p>
-            <p>Usamos a conta Google para evitar spam e garantir um voto justo por membro.</p>
+            <p>Usamos autenticação para evitar spam e garantir um voto justo por membro.</p>
           </div>
         </div>
 
