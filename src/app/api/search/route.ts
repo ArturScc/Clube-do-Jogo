@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-import { searchGamesWithGemini } from '@/lib/gemini';
+import { searchGamesWithIGDB } from '@/lib/igdb';
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -30,26 +30,24 @@ export async function GET(request: Request) {
       console.error('Erro ao ler cache do banco:', dbError);
     }
 
-    // Se encontramos resultados locais suficientes (ex: 2 ou mais), podemos retorná-los para ser mais rápido.
-    // Mas para garantir uma busca fresca e completa, se o cache estiver vazio ou quisermos mais, chamamos o Gemini.
+    // Se encontramos resultados locais suficientes, retornamos do cache
     if (cachedGames && cachedGames.length >= 2) {
       return NextResponse.json(cachedGames);
     }
 
-    // 3. Caso contrário, fazemos a chamada ao Gemini para buscar e estruturar
-    const geminiResults = await searchGamesWithGemini(query);
+    // 3. Buscar na IGDB
+    const igdbResults = await searchGamesWithIGDB(query);
 
-    // 4. Salvar os novos jogos retornados pelo Gemini no Supabase (ignorando duplicados pelo título)
+    // 4. Salvar os novos jogos retornados pela IGDB no Supabase (ignorando duplicados pelo título)
     const savedGames: any[] = [];
-    for (const game of geminiResults) {
-      // Tentar inserir o jogo
+    for (const game of igdbResults) {
       const { data: inserted, error: insertError } = await supabase
         .from('games')
         .insert({
           title: game.title,
           duration_hours: game.duration_hours,
-          image_url: game.image_url || 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400&q=80', // Imagem fallback
-          description: game.description
+          image_url: game.image_url ?? 'https://images.unsplash.com/photo-1550745165-9bc0b252726f?w=400&q=80',
+          description: game.description,
         })
         .select()
         .single();
@@ -57,22 +55,18 @@ export async function GET(request: Request) {
       if (!insertError && inserted) {
         savedGames.push(inserted);
       } else if (insertError && insertError.code === '23505') {
-        // Código 23505 é erro de chave única (Unique Constraint no título)
-        // Se já existe, apenas buscamos o jogo existente no banco
+        // Jogo já existe no banco, buscar o existente
         const { data: existing } = await supabase
           .from('games')
           .select('*')
           .eq('title', game.title)
           .single();
-        if (existing) {
-          savedGames.push(existing);
-        }
-      } else {
-        console.error('Erro ao inserir jogo buscado:', insertError);
+        if (existing) savedGames.push(existing);
+      } else if (insertError) {
+        console.error('Erro ao inserir jogo IGDB:', insertError);
       }
     }
 
-    // Retorna a combinação de resultados salvos ou o que temos no cache
     const finalResults = savedGames.length > 0 ? savedGames : (cachedGames || []);
     return NextResponse.json(finalResults);
   } catch (error: any) {
