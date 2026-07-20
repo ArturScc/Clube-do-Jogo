@@ -57,6 +57,7 @@ export default function Home() {
   // Ranking state
   const [ranking, setRanking] = useState<RankingItem[]>([]);
   const [rankingLoading, setRankingLoading] = useState(false);
+  const [votedGameIds, setVotedGameIds] = useState<Set<string>>(new Set());
 
   // Current Month helper (e.g. "2026-07")
   const getCurrentMonth = () => {
@@ -188,8 +189,8 @@ export default function Home() {
   // Regras de pontuação de duração de jogo
   const getPlaytimePoints = (hours: number): number => {
     if (hours < 8) return 1;
-    if (hours >= 8 && hours <= 12) return 3;
-    if (hours > 12 && hours <= 20) return 2;
+    if (hours >= 8 && hours <= 15) return 3;
+    if (hours > 15 && hours <= 20) return 2;
     return 1; // > 20h
   };
 
@@ -203,6 +204,8 @@ export default function Home() {
         .select('game_id, user_id');
 
       if (votesError) throw votesError;
+
+      setVotedGameIds(new Set(votes?.filter(v => v.user_id === user.id).map(v => v.game_id) || []));
 
       // Buscar todos os jogos relacionados aos votos
       const gameIds = Array.from(new Set(votes?.map(v => v.game_id) || []));
@@ -260,6 +263,15 @@ export default function Home() {
       
       const gameList = data?.map(item => item.games) as unknown as Game[];
       setBacklog(gameList || []);
+
+      const { data: votes, error: votesError } = await supabase
+        .from('votes')
+        .select('game_id')
+        .eq('user_id', user.id);
+
+      if (votesError) throw votesError;
+
+      setVotedGameIds(new Set(votes?.map(v => v.game_id) || []));
     } catch (error) {
       console.error('Erro ao carregar backlog:', error);
     }
@@ -289,7 +301,20 @@ export default function Home() {
     }
   };
 
-  // Adicionar jogo ao backlog pessoal
+  const addVoteForGame = async (gameId: string) => {
+    const { error } = await supabase
+      .from('votes')
+      .insert({
+        user_id: user.id,
+        game_id: gameId,
+      });
+
+    if (error && error.code !== '23505') throw error;
+
+    setVotedGameIds(prev => new Set(prev).add(gameId));
+  };
+
+  // Adicionar jogo ao backlog pessoal e ao ranking automaticamente
   const addToBacklog = async (game: Game) => {
     try {
       const { error } = await supabase
@@ -301,14 +326,21 @@ export default function Home() {
 
       if (error) {
         if (error.code === '23505') {
-          alert('Este jogo já está no seu backlog!');
+          await addVoteForGame(game.id);
+          await fetchRanking();
+          alert('Este jogo já está no seu backlog e já entrou no ranking!');
+          setShowSearchModal(false);
+          setSearchQuery('');
+          setSearchResults([]);
         } else {
           throw error;
         }
       } else {
+        await addVoteForGame(game.id);
         // Atualizar lista local
         setBacklog(prev => [...prev, game]);
-        alert('Jogo adicionado ao backlog com sucesso!');
+        await fetchRanking();
+        alert('Jogo adicionado ao backlog e ao ranking com sucesso!');
         setShowSearchModal(false);
         setSearchQuery('');
         setSearchResults([]);
@@ -331,7 +363,21 @@ export default function Home() {
 
       if (error) throw error;
 
+      const { error: voteError } = await supabase
+        .from('votes')
+        .delete()
+        .eq('user_id', user.id)
+        .eq('game_id', gameId);
+
+      if (voteError) throw voteError;
+
       setBacklog(prev => prev.filter(g => g.id !== gameId));
+      setVotedGameIds(prev => {
+        const next = new Set(prev);
+        next.delete(gameId);
+        return next;
+      });
+      fetchRanking();
     } catch (error) {
       console.error('Erro ao remover do backlog:', error);
     }
@@ -349,16 +395,13 @@ export default function Home() {
           .eq('game_id', gameId);
 
         if (error) throw error;
+        setVotedGameIds(prev => {
+          const next = new Set(prev);
+          next.delete(gameId);
+          return next;
+        });
       } else {
-        // Adicionar voto (constraint impede voto duplicado no mesmo jogo)
-        const { error } = await supabase
-          .from('votes')
-          .insert({
-            user_id: user.id,
-            game_id: gameId,
-          });
-
-        if (error) throw error;
+        await addVoteForGame(gameId);
       }
 
       // Atualizar ranking
@@ -601,7 +644,7 @@ export default function Home() {
                   <Gamepad2 className="w-8 h-8 text-neutral-700 mb-2.5" />
                   <span className="text-sm font-bold text-neutral-400">Nenhum voto computado ainda</span>
                   <p className="text-xs text-neutral-500 mt-1 max-w-xs">
-                    Vá para a aba "Meu Backlog" e vote em algum jogo para começar a contagem!
+                    Vá para a aba &quot;Meu Backlog&quot; e adicione um jogo para começar a contagem!
                   </p>
                 </div>
               ) : (
@@ -684,7 +727,7 @@ export default function Home() {
             <div className="flex items-center justify-between px-1">
               <div>
                 <h3 className="font-extrabold text-base">Meu Backlog</h3>
-                <p className="text-xs text-neutral-500">Adicione jogos e vote neles para a rodada.</p>
+                <p className="text-xs text-neutral-500">Adicione jogos para entrarem no ranking da rodada.</p>
               </div>
               <button 
                 onClick={() => setShowSearchModal(true)}
@@ -701,15 +744,13 @@ export default function Home() {
                 <Gamepad2 className="w-8 h-8 text-neutral-700 mb-2.5" />
                 <span className="text-sm font-bold text-neutral-400">Backlog Vazio</span>
                 <p className="text-xs text-neutral-500 mt-1 max-w-xs">
-                  Você ainda não tem jogos no seu backlog. Clique em "Buscar Jogo" para adicionar e votar!
+                  Você ainda não tem jogos no seu backlog. Clique em &quot;Buscar Jogo&quot; para adicionar ao ranking!
                 </p>
               </div>
             ) : (
               <div className="flex flex-col gap-3">
                 {backlog.map((game) => {
-                  // Verificar se o usuário já votou nesse jogo este mês
-                  // Para ter essa informação atualizada, podemos puxar do banco ou verificar se está no ranking
-                  const isVoted = ranking.some(item => item.game.id === game.id && item.votedByMe);
+                  const isVoted = votedGameIds.has(game.id);
                   
                   return (
                     <div 
@@ -745,10 +786,7 @@ export default function Home() {
                         </div>
 
                         <div className="flex items-center justify-between mt-2 pt-2 border-t border-neutral-900/60">
-                          <span className="text-[10px] text-neutral-500 font-medium">
-                            Multiplicador: x{getPlaytimePoints(game.duration_hours)}
-                          </span>
-
+                          
                           <button
                             onClick={() => toggleVote(game.id, isVoted)}
                             className={`flex items-center gap-1.5 px-3 py-1 rounded-lg text-[10px] font-extrabold transition active:scale-95 ${
@@ -779,7 +817,7 @@ export default function Home() {
             
             {/* Header */}
             <div className="px-6 pt-6 pb-4 border-b border-neutral-800/80 flex items-center justify-between">
-              <h3 className="font-extrabold text-base">Buscar Jogo com Grok AI</h3>
+              <h3 className="font-extrabold text-base">Buscar Jogo</h3>
               <button 
                 onClick={() => {
                   setShowSearchModal(false);
@@ -820,7 +858,7 @@ export default function Home() {
               {searching ? (
                 <div className="py-12 flex flex-col items-center justify-center text-center">
                   <Loader2 className="w-8 h-8 animate-spin text-violet-500 mb-2.5" />
-                  <span className="text-xs text-neutral-400 font-medium">Buscando na inteligência artificial...</span>
+                  <span className="text-xs text-neutral-400 font-medium">Buscando na base de dados...</span>
                   <p className="text-[10px] text-neutral-500 mt-1 max-w-xs">Isso pode levar alguns segundos enquanto o Grok analisa.</p>
                 </div>
               ) : searchResults.length === 0 ? (

@@ -15,7 +15,7 @@ O aplicativo é um assistente mobile-first projetado para automatizar e otimizar
 * **Framework**: Next.js 16 (App Router) + TypeScript
 * **Estilização**: Tailwind CSS v4 + Design Escuro Premium
 * **Banco de Dados & Auth**: Supabase (PostgreSQL + RLS + Google OAuth)
-* **Inteligência Artificial**: Google Gemini 1.5 Flash (via Google AI Studio) para busca inteligente de jogos com retorno JSON estruturado
+* **Inteligência Artificial**: IGDB API (via Twitch Developer) para busca de metadados de jogos com retorno JSON estruturado
 * **Ícones**: Lucide React
 
 ---
