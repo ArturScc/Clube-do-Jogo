@@ -34,7 +34,7 @@ export default function GameOfMonthPage() {
         <div className="relative">
           <div className="relative isolate mb-4 inline-flex items-center gap-1.5 overflow-hidden rounded-full border border-amber-300/35 bg-[linear-gradient(145deg,rgba(255,221,108,.28),rgba(120,53,15,.28))] px-3.5 py-1.5 text-[10px] font-black uppercase tracking-[0.17em] text-amber-200 shadow-[0_5px_14px_rgba(0,0,0,.3),inset_1px_1px_1px_rgba(255,255,255,.3),inset_-1px_-2px_2px_rgba(0,0,0,.3)] before:absolute before:inset-x-2 before:top-0 before:h-px before:bg-white/45"><Crown className="relative size-3.5 fill-amber-300/35 stroke-amber-100" />Jogo de {formatMonth(selectedMonth, { includeYear: false })}</div>
           <Link href={`/jogos/${game.id}`} className="group mx-auto block w-fit"><div className="mx-auto aspect-[3/4] w-40 overflow-hidden rounded-2xl border border-white/15 bg-zinc-900 shadow-2xl shadow-black/70 transition duration-300 group-hover:-translate-y-1 sm:w-48"><img src={game.image_url} alt={`Capa de ${game.title}`} className="size-full object-cover" /></div><h1 className="mx-auto mt-5 max-w-xl text-3xl font-black tracking-[-0.03em] text-white [text-shadow:0_2px_18px_rgba(0,0,0,.9)] sm:text-5xl">{game.title}</h1></Link>
-          <p className="mx-auto mt-2 max-w-lg text-xs leading-relaxed text-zinc-300 [text-shadow:0_1px_10px_rgba(0,0,0,.9)] sm:text-sm">{game.description}</p>
+          <p className="mx-auto mt-2 max-w-lg text-xs leading-relaxed text-white/75 [text-shadow:0_1px_10px_rgba(0,0,0,.9)] sm:text-sm">{game.description}</p>
         </div>
       </section>
 

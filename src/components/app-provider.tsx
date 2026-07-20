@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { demoMonths, demoProfiles } from '@/lib/demo-data';
 import type { Profile } from '@/lib/types';
 import { monthKey } from '@/lib/utils';
+import { DEFAULT_THEME, isThemeId, THEME_STORAGE_KEY, type ThemeId } from '@/lib/themes';
 
 interface AppContextValue {
   user: User | { id: string; email?: string } | null;
@@ -15,7 +16,9 @@ interface AppContextValue {
   selectedMonth: string;
   availableMonths: string[];
   isHistorical: boolean;
+  theme: ThemeId;
   setSelectedMonth: (month: string) => void;
+  setTheme: (theme: ThemeId) => void;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -31,6 +34,7 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
   const [authLoading, setAuthLoading] = useState(!isDemo);
   const [selectedMonth, setSelectedMonthState] = useState(monthKey());
   const [availableMonths, setAvailableMonths] = useState<string[]>(isDemo ? demoMonths : [monthKey()]);
+  const [theme, setThemeState] = useState<ThemeId>(DEFAULT_THEME);
 
   const fetchProfile = useCallback(async (userId: string) => {
     const { data } = await supabase.from('profiles').select('*').eq('id', userId).maybeSingle();
@@ -57,6 +61,11 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     if (stored && /^\d{4}-\d{2}$/.test(stored) && stored <= monthKey()) {
       queueMicrotask(() => setSelectedMonthState(stored));
     }
+  }, []);
+
+  useEffect(() => {
+    const stored = window.localStorage.getItem(THEME_STORAGE_KEY);
+    if (isThemeId(stored)) queueMicrotask(() => setThemeState(stored));
   }, []);
 
   useEffect(() => {
@@ -93,6 +102,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     window.localStorage.setItem(MONTH_STORAGE_KEY, value);
   }, []);
 
+  const setTheme = useCallback((value: ThemeId) => {
+    setThemeState(value);
+    document.documentElement.dataset.theme = value;
+    window.localStorage.setItem(THEME_STORAGE_KEY, value);
+    const color = getComputedStyle(document.documentElement).getPropertyValue('--background').trim();
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', color);
+  }, []);
+
   const signOut = useCallback(async () => {
     if (!isDemo) await supabase.auth.signOut();
   }, [isDemo, supabase]);
@@ -105,12 +122,14 @@ export function AppProvider({ children }: { children: React.ReactNode }) {
     selectedMonth,
     availableMonths,
     isHistorical: selectedMonth < monthKey(),
+    theme,
     setSelectedMonth,
+    setTheme,
     signOut,
     refreshProfile: async () => {
       if (user) await fetchProfile(user.id);
     },
-  }), [authLoading, availableMonths, fetchProfile, isDemo, profile, selectedMonth, setSelectedMonth, signOut, user]);
+  }), [authLoading, availableMonths, fetchProfile, isDemo, profile, selectedMonth, setSelectedMonth, setTheme, signOut, theme, user]);
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
 }

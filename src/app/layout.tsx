@@ -32,7 +32,7 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   themeColor: "#08080a",
-  colorScheme: "dark",
+  colorScheme: "dark light",
 };
 
 export default function RootLayout({
@@ -43,9 +43,12 @@ export default function RootLayout({
   return (
     <html
       lang="pt-BR"
+      data-theme="original"
+      suppressHydrationWarning
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full bg-[#08080a] text-zinc-50 font-sans">
+      <body className="min-h-full bg-[var(--background)] text-zinc-50 font-sans">
+        <script id="theme-init" suppressHydrationWarning dangerouslySetInnerHTML={{ __html: `try{var t=localStorage.getItem('clube-do-jogo:theme');var c={original:'#08080a',zelda:'#09100c',aperture:'#e9eef0',nier:'#c9c3ad',crossing:'#b8dfc7'};if(c[t]){document.documentElement.dataset.theme=t;var m=document.querySelector('meta[name="theme-color"]');if(m)m.content=c[t]}}catch(e){}` }} />
         <AppProvider>
           <AppShell>{children}</AppShell>
           <PwaRegistration />

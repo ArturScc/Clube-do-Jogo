@@ -13,6 +13,7 @@ import { Avatar } from './ui/avatar';
 import { Dialog, DialogContent, DialogTrigger } from './ui/dialog';
 import { GameListCard } from './game-list-card';
 import { ListSkeleton, Skeleton } from './ui/skeleton';
+import { ThemeSelector } from './theme-selector';
 
 export function ProfileView({ profileId, own = false }: { profileId: string; own?: boolean }) {
   const supabase = useMemo(() => createClient(), []);
@@ -56,7 +57,7 @@ export function ProfileView({ profileId, own = false }: { profileId: string; own
         <Tabs.Content value="completed" className="outline-none data-[state=active]:animate-fade-in">{data.completed.length ? <div ref={completedParent} className="space-y-3">{data.completed.map(game => <GameListCard key={game.id} game={game} />)}</div> : <Empty text="Nenhum jogo finalizado." />}</Tabs.Content>
       </Tabs.Root>
 
-      {own && <div className="mt-8 border-t border-white/8 pt-5"><button onClick={() => void signOut()} className="inline-flex h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-red-500/15 bg-red-500/[0.06] px-4 text-xs font-extrabold text-red-300 transition hover:bg-red-500/10"><LogOut className="size-4" />Sair da conta</button></div>}
+      {own && <><ThemeSelector /><div className="mt-5 border-t border-white/8 pt-5"><button onClick={() => void signOut()} className="inline-flex h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-red-500/15 bg-red-500/[0.06] px-4 text-xs font-extrabold text-red-300 transition hover:bg-red-500/10"><LogOut className="size-4" />Sair da conta</button></div></>}
     </div>
   );
 }
