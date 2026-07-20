@@ -30,8 +30,10 @@ export async function GET(request: Request) {
       console.error('Erro ao ler cache do banco:', dbError);
     }
 
-    // Se encontramos resultados locais suficientes, retornamos do cache
-    if (cachedGames && cachedGames.length >= 2) {
+    const hasFreshMetadata = cachedGames?.every(game => game.average_rating !== null && game.release_year !== null);
+
+    // Se encontramos resultados locais suficientes e completos, retornamos do cache
+    if (cachedGames && cachedGames.length >= 2 && hasFreshMetadata) {
       return NextResponse.json(cachedGames);
     }
 
@@ -78,11 +80,26 @@ export async function GET(request: Request) {
           .eq('title', game.title)
           .single();
         if (existing) {
-          savedGames.push({
-            ...existing,
+          const metadataPatch = {
             average_rating: existing.average_rating ?? game.average_rating,
             release_year: existing.release_year ?? game.release_year,
-          });
+          };
+          const shouldUpdateMetadata =
+            (existing.average_rating === null && game.average_rating !== null) ||
+            (existing.release_year === null && game.release_year !== null);
+
+          if (shouldUpdateMetadata) {
+            const { data: updated, error: updateError } = await supabase
+              .from('games')
+              .update(metadataPatch)
+              .eq('id', existing.id)
+              .select()
+              .single();
+
+            savedGames.push(updateError || !updated ? { ...existing, ...metadataPatch } : updated);
+          } else {
+            savedGames.push({ ...existing, ...metadataPatch });
+          }
         }
       } else if (insertError) {
         console.error('Erro ao inserir jogo IGDB:', insertError);
