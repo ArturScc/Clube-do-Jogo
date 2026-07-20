@@ -90,8 +90,8 @@ export async function searchGamesWithIGDB(query: string): Promise<IGDBGameResult
         if (ttbRes.ok) {
           const ttbData: any[] = await ttbRes.json();
           if (ttbData && ttbData.length > 0) {
-            // "normally" é o tempo médio de jogo (em segundos), converter para horas
-            const seconds = ttbData[0].normally ?? ttbData[0].hastily ?? ttbData[0].completely;
+            // "hastily" = história principal (Main Story), converter de segundos para horas
+            const seconds = ttbData[0].hastily ?? ttbData[0].normally ?? ttbData[0].completely;
             if (seconds) {
               durationHours = Math.round((seconds / 3600) * 10) / 10;
             }

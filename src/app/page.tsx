@@ -585,22 +585,6 @@ export default function Home() {
         {/* ABA 1: RANKING */}
         {activeTab === 'ranking' && (
           <div className="flex flex-col gap-5 animate-fadeIn">
-            {/* Explaining rules banner */}
-            <div className="bg-neutral-900/60 border border-neutral-800/80 rounded-2xl p-4 text-xs leading-relaxed text-neutral-400 relative overflow-hidden">
-              <div className="absolute top-[-30px] right-[-30px] w-[80px] h-[80px] bg-violet-600/10 rounded-full blur-[30px]" />
-              <div className="flex items-center gap-1.5 font-bold text-neutral-200 mb-1.5">
-                <Sparkles className="w-3.5 h-3.5 text-violet-400" />
-                Fórmula de Pontos
-              </div>
-              Cada voto vale <strong className="text-white">2 pontos × multiplicador de duração</strong>:
-              <ul className="list-disc pl-4 mt-1.5 space-y-0.5 text-neutral-400">
-                <li>&lt; 8h de jogo = 1x (2 pts/voto)</li>
-                <li>8h - 12h (Ideal 10h) = 3x (6 pts/voto)</li>
-                <li>12h - 20h = 2x (4 pts/voto)</li>
-                <li>&gt; 20h de jogo = 1x (2 pts/voto)</li>
-              </ul>
-            </div>
-
             {/* Ranking list */}
             <div>
               <div className="flex items-center justify-between mb-4 px-1">
@@ -665,9 +649,6 @@ export default function Home() {
                               <span className="text-[10px] bg-neutral-800 text-neutral-400 px-1.5 py-0.5 rounded font-medium flex items-center gap-1">
                                 <Clock className="w-2.5 h-2.5" />
                                 {item.game.duration_hours}h
-                              </span>
-                              <span className="text-[10px] bg-violet-950/40 text-violet-300 border border-violet-800/20 px-1.5 py-0.5 rounded font-bold">
-                                {item.playtimePoints} pts/voto
                               </span>
                             </div>
                           </div>
