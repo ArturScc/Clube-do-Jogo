@@ -1,4 +1,4 @@
-<svg xmlns="http://www.w3.org/2000/svg" width="242" height="168" viewBox="0 0 242 168">
+<svg xmlns="http://www.w3.org/2000/svg" width="121" height="168" viewBox="0 0 121 168">
   <defs>
     <g id="triforce">
       <path d="M0-16 9 0H-9Z"/>
@@ -7,12 +7,7 @@
     </g>
   </defs>
   <g fill="none" stroke="#d8bd75" stroke-linejoin="round" stroke-width="1" stroke-opacity=".14">
-    <use href="#triforce" transform="translate(26 30)"/>
-    <use href="#triforce" transform="translate(147 35)"/>
-    <use href="#triforce" transform="translate(27 127)"/>
-    <use href="#triforce" transform="translate(145 133)"/>
-  </g>
-  <g fill="none" stroke="#d8bd75" stroke-linejoin="round" stroke-width=".8" stroke-opacity=".09">
-    <use href="#triforce" transform="translate(124 97) scale(.62)"/>
+    <use href="#triforce" transform="translate(26 35)"/>
+    <use href="#triforce" transform="translate(87 118)"/>
   </g>
 </svg>
