@@ -6,6 +6,8 @@ export interface IGDBGameResult {
   release_year: number | null;
   image_url: string | null;
   description: string;
+  screenshot_urls: string[];
+  trailer_url: string | null;
 }
 
 interface IGDBGame {
@@ -19,6 +21,8 @@ interface IGDBGame {
   total_rating?: number;
   rating?: number;
   aggregated_rating?: number;
+  screenshots?: Array<{ image_id?: string }>;
+  videos?: Array<{ video_id?: string }>;
 }
 
 // Cache do token de acesso em memória para evitar requisições repetidas
@@ -72,7 +76,7 @@ export async function searchGamesWithIGDB(query: string): Promise<IGDBGameResult
     },
     body: `
       search "${query}";
-      fields name, summary, cover.image_id, game_type, first_release_date, total_rating, rating, aggregated_rating;
+      fields name, summary, cover.image_id, screenshots.image_id, videos.video_id, game_type, first_release_date, total_rating, rating, aggregated_rating;
       where version_parent = null & cover != null;
       limit 5;
     `,
@@ -124,6 +128,10 @@ export async function searchGamesWithIGDB(query: string): Promise<IGDBGameResult
       const releaseYear = game.first_release_date
         ? new Date(game.first_release_date * 1000).getFullYear()
         : null;
+      const screenshotUrls = (game.screenshots || []).slice(0, 6).flatMap(screenshot => screenshot.image_id
+        ? [`https://images.igdb.com/igdb/image/upload/t_screenshot_big/${screenshot.image_id}.jpg`]
+        : []);
+      const trailerUrl = game.videos?.[0]?.video_id ? `https://www.youtube.com/watch?v=${game.videos[0].video_id}` : null;
 
       return {
         id: game.id,
@@ -133,6 +141,8 @@ export async function searchGamesWithIGDB(query: string): Promise<IGDBGameResult
         release_year: releaseYear,
         image_url: imageUrl,
         description: game.summary ?? 'Sem descrição disponível.',
+        screenshot_urls: screenshotUrls,
+        trailer_url: trailerUrl,
       };
     })
   );
@@ -142,7 +152,7 @@ export async function searchGamesWithIGDB(query: string): Promise<IGDBGameResult
 
 export async function getGameByIGDBId(igdbId: number): Promise<IGDBGameResult | null> {
   const clientId = process.env.IGDB_CLIENT_ID;
-  if (!clientId) throw new Error('IGDB_CLIENT_ID nÃ£o configurado.');
+  if (!clientId) throw new Error('IGDB_CLIENT_ID não configurado.');
 
   const token = await getTwitchToken();
 
@@ -154,7 +164,7 @@ export async function getGameByIGDBId(igdbId: number): Promise<IGDBGameResult | 
       'Content-Type': 'text/plain',
     },
     body: `
-      fields name, summary, cover.image_id, first_release_date, total_rating, rating, aggregated_rating;
+      fields name, summary, cover.image_id, screenshots.image_id, videos.video_id, first_release_date, total_rating, rating, aggregated_rating;
       where id = ${igdbId};
       limit 1;
     `,
@@ -200,6 +210,10 @@ export async function getGameByIGDBId(igdbId: number): Promise<IGDBGameResult | 
   const releaseYear = game.first_release_date
     ? new Date(game.first_release_date * 1000).getFullYear()
     : null;
+  const screenshotUrls = (game.screenshots || []).slice(0, 6).flatMap(screenshot => screenshot.image_id
+    ? [`https://images.igdb.com/igdb/image/upload/t_screenshot_big/${screenshot.image_id}.jpg`]
+    : []);
+  const trailerUrl = game.videos?.[0]?.video_id ? `https://www.youtube.com/watch?v=${game.videos[0].video_id}` : null;
 
   return {
     id: game.id,
@@ -208,6 +222,8 @@ export async function getGameByIGDBId(igdbId: number): Promise<IGDBGameResult | 
     average_rating: averageRating === null ? null : Math.round(averageRating),
     release_year: releaseYear,
     image_url: imageUrl,
-    description: game.summary ?? 'Sem descriÃ§Ã£o disponÃ­vel.',
+    description: game.summary ?? 'Sem descrição disponível.',
+    screenshot_urls: screenshotUrls,
+    trailer_url: trailerUrl,
   };
 }

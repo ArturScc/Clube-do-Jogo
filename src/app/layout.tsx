@@ -1,5 +1,8 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import { AppProvider } from "@/components/app-provider";
+import { AppShell } from "@/components/app-shell";
+import { PwaRegistration } from "@/components/pwa-registration";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -13,8 +16,23 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Clube do Jogo | Votação e Backlog",
-  description: "O aplicativo oficial do Clube do Jogo para gerenciar seu backlog, votar no jogo do mês e acompanhar o ranking dos mais votados.",
+  title: {
+    default: "Clube do Jogo",
+    template: "%s · Clube do Jogo",
+  },
+  description: "Vote, jogue e compartilhe cada mês com o Clube do Jogo.",
+  applicationName: "Clube do Jogo",
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [{ url: "/icon.png", type: "image/png", sizes: "512x512" }],
+    apple: [{ url: "/icon.png", type: "image/png", sizes: "512x512" }],
+  },
+  appleWebApp: { capable: true, statusBarStyle: "black-translucent", title: "Clube do Jogo" },
+};
+
+export const viewport: Viewport = {
+  themeColor: "#08080a",
+  colorScheme: "dark",
 };
 
 export default function RootLayout({
@@ -27,8 +45,11 @@ export default function RootLayout({
       lang="pt-BR"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col bg-neutral-950 text-neutral-50 font-sans">
-        {children}
+      <body className="min-h-full bg-[#08080a] text-zinc-50 font-sans">
+        <AppProvider>
+          <AppShell>{children}</AppShell>
+          <PwaRegistration />
+        </AppProvider>
       </body>
     </html>
   );

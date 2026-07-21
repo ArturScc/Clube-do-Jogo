@@ -71,13 +71,13 @@ CREATE POLICY "Permitir exclusão de backlog próprio" ON public.backlogs
     FOR DELETE USING (auth.uid() = user_id);
 
 -- Tabela VOTES: Leitura livre para autenticados (para gerar o ranking), mas apenas o próprio usuário pode inserir ou deletar seu voto
-CREATE POLICY "Permitir leitura de jogos zerados para autenticados" ON public.completed_games
+CREATE POLICY "Permitir leitura de jogos finalizados para autenticados" ON public.completed_games
     FOR SELECT USING (auth.role() = 'authenticated');
 
-CREATE POLICY "Permitir insercao de jogo zerado proprio" ON public.completed_games
+CREATE POLICY "Permitir insercao de jogo finalizado proprio" ON public.completed_games
     FOR INSERT WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY "Permitir exclusao de jogo zerado proprio" ON public.completed_games
+CREATE POLICY "Permitir exclusao de jogo finalizado proprio" ON public.completed_games
     FOR DELETE USING (auth.uid() = user_id);
 
 CREATE POLICY "Permitir leitura de votos para autenticados" ON public.votes

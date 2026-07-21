@@ -1,8 +1,10 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #08080a;
+  --foreground: #f4f4f5;
+  color-scheme: dark;
+  --ease-snappy: cubic-bezier(.22, 1, .36, 1);
 }
 
 @theme inline {
@@ -12,15 +14,154 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-width: 280px;
+  overflow-x: clip;
+  background: var(--background);
+  scrollbar-gutter: stable;
 }
 
 body {
+  min-width: 280px;
+  min-height: 100dvh;
+  overflow-x: clip;
   background: var(--background);
   color: var(--foreground);
   font-family: Arial, Helvetica, sans-serif;
+  overscroll-behavior-x: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button,
+[role="button"] {
+  white-space: nowrap;
+}
+
+a[href],
+button:not(:disabled),
+select:not(:disabled),
+summary,
+[role="button"]:not([aria-disabled="true"]),
+[role="tab"]:not([aria-disabled="true"]),
+[role="menuitem"]:not([aria-disabled="true"]) {
+  cursor: pointer;
+}
+
+button:disabled,
+select:disabled,
+[aria-disabled="true"] {
+  cursor: not-allowed;
+}
+
+input:not(:disabled),
+textarea:not(:disabled) {
+  cursor: text;
+}
+
+button,
+a,
+input,
+textarea,
+select {
+  touch-action: manipulation;
+}
+
+:where(button, a, input, textarea, select, [role="button"], [role="tab"], [role="menuitem"]) {
+  transition-timing-function: var(--ease-snappy) !important;
+}
+
+:where(button:not(:disabled), a[href], [role="button"]:not([aria-disabled="true"])):active {
+  transform: scale(.975);
+}
+
+img,
+video,
+iframe {
+  max-width: 100%;
+}
+
+::selection {
+  background: rgb(139 92 246 / 45%);
+}
+
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-thumb {
+  border-radius: 99px;
+  background: rgb(113 113 122 / 55%);
+}
+
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(18px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes modal-in {
+  from { opacity: 0; filter: blur(3px); translate: -50% calc(-50% + 30px); scale: .94; }
+  to { opacity: 1; translate: -50% -50%; scale: 1; }
+}
+
+@keyframes modal-out {
+  from { opacity: 1; translate: -50% -50%; scale: 1; }
+  to { opacity: 0; filter: blur(1px); translate: -50% calc(-50% + 14px); scale: .98; }
+}
+
+@keyframes overlay-out {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes pop-in {
+  from { opacity: 0; filter: blur(2px); transform: translateY(-14px) scale(.92); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes pop-out {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; filter: blur(1px); transform: translateY(-6px) scale(.96); }
+}
+
+@keyframes tab-in {
+  from { opacity: 0; transform: translateY(5px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-fade-in { animation: fade-in 150ms var(--ease-snappy); }
+.animate-slide-up { animation: slide-up 180ms var(--ease-snappy); }
+.animate-tab-in { animation: tab-in 140ms var(--ease-snappy); }
+
+/* Radix keeps the closed state mounted only when it can read these animations. */
+.animated-popup[data-state='open'] { animation: pop-in 190ms var(--ease-snappy) both; will-change: opacity, transform, filter; }
+.animated-popup[data-state='closed'] { animation: pop-out 130ms cubic-bezier(.4, 0, 1, 1) both; }
+.animated-modal[data-state='open'] { animation: modal-in 230ms var(--ease-snappy) both; will-change: opacity, transform, filter; }
+.animated-modal[data-state='closed'] { animation: modal-out 150ms cubic-bezier(.4, 0, 1, 1) both; }
+.animated-overlay[data-state='open'] { animation: fade-in 150ms var(--ease-snappy) both; }
+.animated-overlay[data-state='closed'] { animation: overlay-out 120ms cubic-bezier(.4, 0, 1, 1); }
+
+.line-clamp-2 {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .01ms !important;
+  }
 }
