@@ -23,6 +23,8 @@ export const demoGames: Game[] = [
       'https://images.ctfassets.net/5owu3y35gz1g/1NCys84aPIPSU43tNTKBDx/40be68e3a3ff0678992eb25fcac14e81/Hades_Aug19_04.png?q=90&w=1400',
     ],
     trailer_url: 'https://www.youtube.com/watch?v=91t0ha9x0AE',
+    genres: ['Hack and slash', 'Roguelike'],
+    platforms: ['Nintendo Switch', 'PC (Microsoft Windows)', 'PlayStation 5', 'Xbox Series X|S'],
   },
   {
     id: 'hollow-knight', igdb_id: 113112, title: 'Hollow Knight', duration_hours: 27, average_rating: 91, release_year: 2017,

@@ -20,6 +20,8 @@ export async function POST(_request: Request, { params }: { params: Promise<{ id
       image_url: metadata.image_url || game.image_url,
       screenshot_urls: metadata.screenshot_urls,
       trailer_url: metadata.trailer_url,
+      genres: metadata.genres,
+      platforms: metadata.platforms,
       average_rating: metadata.average_rating ?? game.average_rating,
       release_year: metadata.release_year ?? game.release_year,
       duration_hours: metadata.duration_hours || game.duration_hours,

@@ -8,6 +8,8 @@ export interface IGDBGameResult {
   description: string;
   screenshot_urls: string[];
   trailer_url: string | null;
+  genres: string[];
+  platforms: string[];
 }
 
 interface IGDBGame {
@@ -23,6 +25,8 @@ interface IGDBGame {
   aggregated_rating?: number;
   screenshots?: Array<{ image_id?: string }>;
   videos?: Array<{ video_id?: string }>;
+  genres?: Array<{ name?: string }>;
+  platforms?: Array<{ name?: string }>;
 }
 
 // Cache do token de acesso em memória para evitar requisições repetidas
@@ -76,7 +80,7 @@ export async function searchGamesWithIGDB(query: string): Promise<IGDBGameResult
     },
     body: `
       search "${query}";
-      fields name, summary, cover.image_id, screenshots.image_id, videos.video_id, game_type, first_release_date, total_rating, rating, aggregated_rating;
+      fields name, summary, cover.image_id, screenshots.image_id, videos.video_id, genres.name, platforms.name, game_type, first_release_date, total_rating, rating, aggregated_rating;
       where version_parent = null & cover != null;
       limit 5;
     `,
@@ -132,6 +136,8 @@ export async function searchGamesWithIGDB(query: string): Promise<IGDBGameResult
         ? [`https://images.igdb.com/igdb/image/upload/t_screenshot_big/${screenshot.image_id}.jpg`]
         : []);
       const trailerUrl = game.videos?.[0]?.video_id ? `https://www.youtube.com/watch?v=${game.videos[0].video_id}` : null;
+      const genres = Array.from(new Set((game.genres || []).flatMap(genre => genre.name ? [genre.name] : [])));
+      const platforms = Array.from(new Set((game.platforms || []).flatMap(platform => platform.name ? [platform.name] : [])));
 
       return {
         id: game.id,
@@ -143,6 +149,8 @@ export async function searchGamesWithIGDB(query: string): Promise<IGDBGameResult
         description: game.summary ?? 'Sem descrição disponível.',
         screenshot_urls: screenshotUrls,
         trailer_url: trailerUrl,
+        genres,
+        platforms,
       };
     })
   );
@@ -164,7 +172,7 @@ export async function getGameByIGDBId(igdbId: number): Promise<IGDBGameResult | 
       'Content-Type': 'text/plain',
     },
     body: `
-      fields name, summary, cover.image_id, screenshots.image_id, videos.video_id, first_release_date, total_rating, rating, aggregated_rating;
+      fields name, summary, cover.image_id, screenshots.image_id, videos.video_id, genres.name, platforms.name, first_release_date, total_rating, rating, aggregated_rating;
       where id = ${igdbId};
       limit 1;
     `,
@@ -214,6 +222,8 @@ export async function getGameByIGDBId(igdbId: number): Promise<IGDBGameResult | 
     ? [`https://images.igdb.com/igdb/image/upload/t_screenshot_big/${screenshot.image_id}.jpg`]
     : []);
   const trailerUrl = game.videos?.[0]?.video_id ? `https://www.youtube.com/watch?v=${game.videos[0].video_id}` : null;
+  const genres = Array.from(new Set((game.genres || []).flatMap(genre => genre.name ? [genre.name] : [])));
+  const platforms = Array.from(new Set((game.platforms || []).flatMap(platform => platform.name ? [platform.name] : [])));
 
   return {
     id: game.id,
@@ -225,5 +235,7 @@ export async function getGameByIGDBId(igdbId: number): Promise<IGDBGameResult | 
     description: game.summary ?? 'Sem descrição disponível.',
     screenshot_urls: screenshotUrls,
     trailer_url: trailerUrl,
+    genres,
+    platforms,
   };
 }

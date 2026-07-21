@@ -18,6 +18,8 @@ export interface Game {
   description: string;
   screenshot_urls?: string[] | null;
   trailer_url?: string | null;
+  genres?: string[] | null;
+  platforms?: string[] | null;
 }
 
 export interface RankingItem {

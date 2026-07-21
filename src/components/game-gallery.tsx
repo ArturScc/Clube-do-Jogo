@@ -77,8 +77,7 @@ export function GameGallery({ title, images }: { title: string; images: string[]
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(0);
   const [gallerySession, setGallerySession] = useState(0);
-  const visible = images.slice(0, 2);
-  const remaining = Math.max(images.length - 2, 0);
+  const carouselRef = useRef<HTMLDivElement>(null);
 
   const show = (index: number) => {
     setActiveIndex(index);
@@ -87,15 +86,27 @@ export function GameGallery({ title, images }: { title: string; images: string[]
   };
   if (!images.length) return null;
 
+  const moveCarousel = (direction: 'previous' | 'next') => {
+    carouselRef.current?.scrollBy({
+      left: (direction === 'next' ? 1 : -1) * carouselRef.current.clientWidth * .82,
+      behavior: 'smooth',
+    });
+  };
+
   return (
     <>
-      <div className={`grid gap-3 ${visible.length > 1 ? 'grid-cols-2' : 'grid-cols-1'}`}>
-        {visible.map((url, index) => (
-          <button key={url} onClick={() => show(index)} className="group relative aspect-video min-w-0 overflow-hidden rounded-2xl border border-white/8 bg-zinc-900">
-            <img src={url} alt={`Cena ${index + 1} de ${title}`} className="size-full object-cover transition duration-300 group-hover:scale-105" />
-            {index === 1 && remaining > 0 && <span className="absolute inset-0 grid place-items-center bg-black/55 text-2xl font-black text-white backdrop-blur-[2px]">+{remaining}</span>}
-          </button>
-        ))}
+      <div className="group/carousel relative">
+        <div ref={carouselRef} className="flex snap-x snap-mandatory gap-3 overflow-x-auto scroll-smooth pb-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {images.map((url, index) => (
+            <button key={`${url}-${index}`} onClick={() => show(index)} className="group relative aspect-[4/3] w-[84%] shrink-0 snap-start overflow-hidden rounded-2xl border border-white/8 bg-zinc-900 sm:w-[62%]">
+              <img src={url} alt={`Cena ${index + 1} de ${title}`} className="size-full object-cover transition duration-300 group-hover:scale-105" />
+            </button>
+          ))}
+        </div>
+        {images.length > 1 && <>
+          <button onClick={() => moveCarousel('previous')} aria-label="Imagem anterior" title="Imagem anterior" className="absolute left-2 top-1/2 grid size-10 -translate-y-1/2 place-items-center rounded-full bg-black/60 text-white opacity-0 shadow-lg backdrop-blur transition group-hover/carousel:opacity-100 focus-visible:opacity-100"><ChevronLeft className="size-5" /></button>
+          <button onClick={() => moveCarousel('next')} aria-label="Proxima imagem" title="Proxima imagem" className="absolute right-2 top-1/2 grid size-10 -translate-y-1/2 place-items-center rounded-full bg-black/60 text-white opacity-0 shadow-lg backdrop-blur transition group-hover/carousel:opacity-100 focus-visible:opacity-100"><ChevronRight className="size-5" /></button>
+        </>}
       </div>
 
       <ImageGalleryDialog key={gallerySession} title={title} images={images} open={open} onOpenChange={setOpen} activeIndex={activeIndex} onActiveIndexChange={setActiveIndex} />

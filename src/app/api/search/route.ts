@@ -34,7 +34,11 @@ export async function GET(request: Request) {
       game.average_rating !== null &&
       game.release_year !== null &&
       Array.isArray(game.screenshot_urls) &&
-      game.screenshot_urls.length >= 3
+      game.screenshot_urls.length >= 3 &&
+      Array.isArray(game.genres) &&
+      game.genres.length > 0 &&
+      Array.isArray(game.platforms) &&
+      game.platforms.length > 0
     );
 
     // Se encontramos resultados locais suficientes e completos, retornamos do cache
@@ -58,6 +62,8 @@ export async function GET(request: Request) {
         description: game.description,
         screenshot_urls: game.screenshot_urls,
         trailer_url: game.trailer_url,
+        genres: game.genres,
+        platforms: game.platforms,
       };
 
       let { data: inserted, error: insertError } = await supabase
@@ -67,14 +73,14 @@ export async function GET(request: Request) {
         .single();
 
       if (insertError && insertError.code === 'PGRST204') {
-        const { average_rating, release_year, screenshot_urls, trailer_url, ...legacyPayload } = gamePayload;
+        const { average_rating, release_year, screenshot_urls, trailer_url, genres, platforms, ...legacyPayload } = gamePayload;
         const retry = await supabase
           .from('games')
           .insert(legacyPayload)
           .select()
           .single();
 
-        inserted = retry.data ? { ...retry.data, average_rating, release_year, screenshot_urls, trailer_url } : retry.data;
+        inserted = retry.data ? { ...retry.data, average_rating, release_year, screenshot_urls, trailer_url, genres, platforms } : retry.data;
         insertError = retry.error;
       }
 
@@ -94,13 +100,17 @@ export async function GET(request: Request) {
             igdb_id: existing.igdb_id ?? game.id,
             screenshot_urls: existing.screenshot_urls?.length ? existing.screenshot_urls : game.screenshot_urls,
             trailer_url: existing.trailer_url ?? game.trailer_url,
+            genres: existing.genres?.length ? existing.genres : game.genres,
+            platforms: existing.platforms?.length ? existing.platforms : game.platforms,
           };
           const shouldUpdateMetadata =
             (existing.average_rating === null && game.average_rating !== null) ||
             (existing.release_year === null && game.release_year !== null) ||
             (existing.igdb_id === null && game.id) ||
             (!existing.screenshot_urls?.length && game.screenshot_urls.length > 0) ||
-            (!existing.trailer_url && game.trailer_url);
+            (!existing.trailer_url && game.trailer_url) ||
+            (!existing.genres?.length && game.genres.length > 0) ||
+            (!existing.platforms?.length && game.platforms.length > 0);
 
           if (shouldUpdateMetadata) {
             const { data: updated, error: updateError } = await supabase

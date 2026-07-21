@@ -1,12 +1,12 @@
 import { forwardRef, type ButtonHTMLAttributes } from 'react';
-import { CheckCircle2, Library, ThumbsUp } from 'lucide-react';
+import { Flag, Library, ThumbsUp } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type ActionKind = 'vote' | 'completed' | 'backlog';
 
 const meta = {
   vote: { Icon: ThumbsUp, idle: 'Votar', active: 'Votado', activeClass: 'border-violet-400/25 bg-violet-500/[.12] text-violet-200', fillClass: 'fill-violet-400/25' },
-  completed: { Icon: CheckCircle2, idle: 'Finalizar', active: 'Finalizado', activeClass: 'border-emerald-400/25 bg-emerald-500/[.12] text-emerald-200', fillClass: 'fill-emerald-400/25' },
+  completed: { Icon: Flag, idle: 'Zerei', active: 'Zerado', activeClass: 'border-pink-400/30 bg-pink-500/[.12] text-pink-200', fillClass: 'fill-pink-400/25' },
   backlog: { Icon: Library, idle: 'Adicionar ao backlog', active: 'No backlog', activeClass: 'border-sky-400/25 bg-sky-500/[.10] text-sky-200', fillClass: 'fill-sky-400/20' },
 } as const;
 
