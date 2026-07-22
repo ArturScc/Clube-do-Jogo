@@ -16,6 +16,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Avatar } from '@/components/ui/avatar';
 import { GameGallery } from '@/components/game-gallery';
 import { GameActionButton } from '@/components/game-action-button';
+import { FloatingTrailer } from '@/components/floating-trailer';
 
 interface GamePeople {
   voters: Profile[];
@@ -162,8 +163,8 @@ export default function GamePage() {
 
   return (
     <div className="mx-auto max-w-3xl animate-fade-in">
-      <div className="game-trailer-card relative -mx-4 -mt-5 aspect-video overflow-hidden bg-black sm:-mt-7 min-[960px]:mx-0 min-[960px]:mt-0 min-[960px]:rounded-2xl min-[960px]:border min-[960px]:border-white/10">
-        {trailer ? <iframe src={trailer} title={`Trailer de ${game.title}`} className="size-full" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture" referrerPolicy="strict-origin-when-cross-origin" allowFullScreen /> : <img src={game.image_url} alt={`Capa de ${game.title}`} className="size-full object-cover" />}
+      <div className="game-trailer-card relative -mx-4 -mt-5 overflow-hidden bg-black sm:-mt-7 min-[960px]:mx-0 min-[960px]:mt-0 min-[960px]:rounded-2xl min-[960px]:border min-[960px]:border-white/10">
+        {trailer ? <FloatingTrailer src={trailer} title={`Trailer de ${game.title}`} /> : <div className="aspect-video"><img src={game.image_url} alt={`Capa de ${game.title}`} className="size-full object-cover" /></div>}
       </div>
 
       <section className="pt-6 sm:pt-8">
