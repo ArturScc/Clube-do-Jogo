@@ -21,7 +21,6 @@ export async function fetchRankingData(supabase: SupabaseClient, votingMonth: st
   const voteMonth = shiftMonth(votingMonth, 1);
 
   if (historical) {
-    await supabase.rpc('finalize_closed_club_months');
     const { data: snapshots, error: snapshotError } = await supabase
       .from('ranking_snapshots')
       .select('*, games (*)')
@@ -72,7 +71,7 @@ export async function fetchRankingData(supabase: SupabaseClient, votingMonth: st
   const gameIds = Array.from(new Set(votes?.map(vote => vote.game_id) || []));
   if (!gameIds.length) return [];
   const [{ data: completed, error: completedError }, { data: games, error: gamesError }, { data: backlog, error: backlogError }] = await Promise.all([
-    supabase.from('completed_games').select('game_id, user_id').in('game_id', gameIds),
+    supabase.from('game_progress').select('game_id, user_id').eq('status', 'finished').in('game_id', gameIds),
     supabase.from('games').select('*').in('id', gameIds),
     supabase.from('backlogs').select('game_id').eq('user_id', userId).in('game_id', gameIds),
   ]);
@@ -120,7 +119,6 @@ export async function fetchGame(supabase: SupabaseClient, gameId: string, isDemo
 
 export async function fetchGameOfMonth(supabase: SupabaseClient, month: string, isDemo: boolean): Promise<Game | null> {
   if (isDemo) return demoGames[0];
-  await supabase.rpc('finalize_closed_club_months');
   const { data, error } = await supabase.from('club_months').select('game_id, games (*)').eq('month', month).maybeSingle();
   if (error) throw error;
   if (!data?.games) return null;
@@ -156,7 +154,7 @@ export async function fetchProfileWithGames(supabase: SupabaseClient, profileId:
   const [{ data: profile, error: profileError }, { data: backlog, error: backlogError }, { data: completed, error: completedError }, votesResponse, platforms] = await Promise.all([
     supabase.from('profiles').select('*').eq('id', profileId).maybeSingle(),
     supabase.from('backlogs').select('games (*)').eq('user_id', profileId).order('created_at', { ascending: false }),
-    supabase.from('completed_games').select('games (*)').eq('user_id', profileId).order('created_at', { ascending: false }),
+    supabase.from('game_progress').select('games (*)').eq('user_id', profileId).eq('status', 'finished').order('updated_at', { ascending: false }),
     voteMonth ? supabase.from('votes').select('game_id, user_id').eq('vote_month', voteMonth) : Promise.resolve({ data: [], error: null }),
     fetchUserPlatforms(supabase, profileId, false),
   ]);

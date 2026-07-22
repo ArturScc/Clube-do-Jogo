@@ -104,7 +104,6 @@ export const demoProgress: GameProgress[] = demoProfiles.map((profile, index) =>
   id: `progress-${profile.id}`,
   user_id: profile.id,
   game_id: 'hades',
-  club_month: monthKey(),
   status: index < 2 ? 'finished' : index < 4 ? 'started' : 'not_started',
   rating: index < 2 ? 9 - index : null,
   started_at: index < 4 ? new Date(Date.now() - (index + 4) * 86400000).toISOString() : null,

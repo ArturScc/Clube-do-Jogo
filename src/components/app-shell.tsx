@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Gamepad2, Trophy, UserRound } from 'lucide-react';
+import { Gamepad2, ShieldCheck, Trophy, UserRound } from 'lucide-react';
 import { useApp } from './app-provider';
 import { AuthScreen } from './auth-screen';
 import { MonthSelector } from './month-selector';
@@ -24,7 +24,7 @@ function isNavigationActive(pathname: string, href: string) {
 
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
-  const { user, profile, authLoading } = useApp();
+  const { user, profile, authLoading, isAdmin } = useApp();
   const [navVisible, setNavVisible] = useState(true);
   const lastScroll = useRef(0);
   const previousPath = useRef(pathname);
@@ -52,6 +52,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   if (authLoading || !user) return <AuthScreen loading={authLoading} />;
 
   const detailRoute = pathname.startsWith('/jogos/') || pathname.startsWith('/perfil/');
+  const desktopNavigation = isAdmin ? [...navigation, { href: '/admin', label: 'Administração', icon: ShieldCheck }] : navigation;
 
   return (
     <div className="theme-shell relative isolate min-h-dvh text-zinc-100">
@@ -65,12 +66,12 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </Link>
 
         <div className="border-b border-white/[0.08] px-4 py-4">
-          <div className="mb-2 px-1 text-[9px] font-black uppercase tracking-[0.16em] text-zinc-600">Mês do clube</div>
+          <div className="mb-2 px-1 text-[9px] font-black uppercase tracking-[0.16em] text-zinc-600">Ciclo do clube</div>
           <MonthSelector />
         </div>
 
         <nav aria-label="Navegação principal" className="flex flex-1 flex-col gap-1.5 p-3">
-          {navigation.map(item => {
+          {desktopNavigation.map(item => {
             const active = isNavigationActive(pathname, item.href);
             const Icon = item.icon;
             return (
@@ -85,7 +86,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="border-t border-white/[0.08] p-3 pb-[max(.75rem,env(safe-area-inset-bottom))]">
           <Link href="/perfil" aria-label="Abrir perfil" scroll={false} className="flex min-w-0 items-center gap-3 rounded-xl p-2 transition hover:bg-white/5">
             <Avatar src={profile?.avatar_url} name={profile?.name} className="size-10 shrink-0" />
-            <span className="min-w-0"><strong className="block truncate text-xs text-zinc-200">{profile?.name || 'Meu perfil'}</strong><span className="mt-0.5 block text-[10px] text-zinc-600">Ver perfil</span></span>
+            <span className="min-w-0"><strong className="block truncate text-xs text-zinc-200">{profile?.name || 'Meu perfil'}</strong><span className="mt-0.5 block text-[10px] text-zinc-600">{isAdmin ? 'Administrador' : 'Ver perfil'}</span></span>
           </Link>
         </div>
       </aside>

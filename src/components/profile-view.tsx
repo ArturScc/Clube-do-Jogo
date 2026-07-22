@@ -1,9 +1,10 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import Link from 'next/link';
 import * as Tabs from '@radix-ui/react-tabs';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
-import { CalendarDays, Camera, CheckCircle2, Gamepad2, Library, LogOut, Save, UserRound } from 'lucide-react';
+import { CalendarDays, Camera, CheckCircle2, ChevronRight, Gamepad2, Library, LogOut, Save, ShieldCheck, UserRound } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { fetchProfileWithGames } from '@/lib/data';
 import { formatDate, formatFinishedCount } from '@/lib/utils';
@@ -19,7 +20,7 @@ import { YourGamesPanel } from '@/app/seus-jogos/page';
 
 export function ProfileView({ profileId, own = false, showThemeSelector = false }: { profileId: string; own?: boolean; showThemeSelector?: boolean }) {
   const supabase = useMemo(() => createClient(), []);
-  const { isDemo, signOut, refreshProfile, runOptimistic } = useApp();
+  const { isDemo, isAdmin, signOut, refreshProfile, runOptimistic } = useApp();
   const query = useStaleQuery(`profile:${profileId}`, () => fetchProfileWithGames(supabase, profileId, isDemo));
   const [name, setName] = useState('');
   const [bio, setBio] = useState('');
@@ -79,6 +80,7 @@ export function ProfileView({ profileId, own = false, showThemeSelector = false 
         <Tabs.Content value="completed" className="outline-none data-[state=active]:animate-fade-in">{data.completed.length ? <div ref={completedParent} className="space-y-3">{data.completed.map(game => <GameListCard key={game.id} game={game} />)}</div> : <Empty text="Nenhum jogo finalizado." />}</Tabs.Content>
       </Tabs.Root>}
 
+      {own && isAdmin && <Link href="/admin" className="admin-entry mb-5 flex items-center gap-3 rounded-2xl border border-violet-400/15 bg-violet-500/[0.06] p-4 transition hover:bg-violet-500/10"><span className="grid size-10 shrink-0 place-items-center rounded-xl bg-violet-500/12 text-violet-300"><ShieldCheck className="size-4" /></span><span className="min-w-0 flex-1"><strong className="block text-sm">Cargos e acesso</strong><span className="mt-0.5 block text-[11px] text-zinc-500">Gerencie administradores e usuários comuns.</span></span><ChevronRight className="size-4 shrink-0 text-zinc-600" /></Link>}
       {showThemeSelector && <ThemeSelector />}
       {own && <div className="mt-5 border-t border-white/8 pt-5"><button onClick={() => void signOut()} className="danger-action inline-flex h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-red-500/15 bg-red-500/[0.06] px-4 text-xs font-extrabold text-red-300 transition hover:bg-red-500/10"><LogOut className="size-4" />Sair da conta</button></div>}
     </div>

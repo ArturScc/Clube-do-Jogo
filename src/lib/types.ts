@@ -7,6 +7,22 @@ export interface Profile {
   created_at?: string | null;
 }
 
+export type AppRole = 'member' | 'admin';
+
+export interface ClubCycle {
+  month: string;
+  game_id: string;
+  status: 'active' | 'closed';
+  started_at?: string | null;
+  closed_at?: string | null;
+  selected_by?: string | null;
+  game?: Game | null;
+}
+
+export interface AdminUser extends Profile {
+  role: AppRole;
+}
+
 export interface Game {
   id: string;
   igdb_id?: number | null;
@@ -61,7 +77,6 @@ export interface GameProgress {
   id: string;
   user_id: string;
   game_id: string;
-  club_month: string;
   status: ProgressStatus;
   rating: number | null;
   started_at: string | null;
@@ -93,7 +108,6 @@ export interface LocalNote {
   id: string;
   userId: string;
   gameId: string;
-  clubMonth: string;
   body: string;
   imageDataUrl?: string;
   createdAt: string;

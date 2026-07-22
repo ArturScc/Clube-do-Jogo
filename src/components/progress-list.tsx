@@ -19,14 +19,23 @@ const statusMeta: Record<ProgressStatus, { label: string; icon: typeof Circle; c
   finished: { label: 'Finalizado', icon: CheckCircle2, color: 'text-emerald-400' },
 };
 
-export function ProgressList({ game }: { game: Game }) {
+export function ProgressList({ game, snapshotMonth }: { game: Game; snapshotMonth?: string }) {
   const supabase = useMemo(() => createClient(), []);
-  const { user, isDemo, selectedMonth, isHistorical, runOptimistic } = useApp();
-  const query = useStaleQuery<GameProgress[]>(`progress:${game.id}:${selectedMonth}`, async () => {
-    if (isDemo) return demoProgress.map(item => ({ ...item, club_month: selectedMonth }));
+  const { user, isDemo, runOptimistic } = useApp();
+  const query = useStaleQuery<GameProgress[]>(`progress:${game.id}:${snapshotMonth || 'latest'}`, async () => {
+    if (isDemo) return demoProgress.map(item => ({ ...item, game_id: game.id }));
+    if (snapshotMonth) {
+      const { data, error } = await supabase
+        .from('cycle_progress_snapshots')
+        .select('*, profile:profiles!cycle_progress_snapshots_user_id_fkey (id, name, avatar_url)')
+        .eq('cycle_month', snapshotMonth)
+        .eq('game_id', game.id);
+      if (error) throw error;
+      return (data || []) as unknown as GameProgress[];
+    }
     const [{ data: profiles, error: profilesError }, { data: progress, error: progressError }] = await Promise.all([
       supabase.from('profiles').select('id, name, avatar_url').order('name'),
-      supabase.from('game_progress').select('*').eq('game_id', game.id).eq('club_month', selectedMonth),
+      supabase.from('game_progress').select('*').eq('game_id', game.id),
     ]);
     if (profilesError) throw profilesError;
     if (progressError) throw progressError;
@@ -35,7 +44,6 @@ export function ProgressList({ game }: { game: Game }) {
       id: progressMap.get(profile.id)?.id || `new-${profile.id}`,
       user_id: profile.id,
       game_id: game.id,
-      club_month: selectedMonth,
       status: (progressMap.get(profile.id)?.status || 'not_started') as ProgressStatus,
       rating: progressMap.get(profile.id)?.rating || null,
       started_at: progressMap.get(profile.id)?.started_at || null,
@@ -47,7 +55,7 @@ export function ProgressList({ game }: { game: Game }) {
   const [progressParent] = useAutoAnimate<HTMLDivElement>({ duration: 160, easing: 'cubic-bezier(.22, 1, .36, 1)' });
 
   async function updateStatus(status: ProgressStatus) {
-    if (isHistorical) return;
+    if (snapshotMonth) return;
     const existing = progress.find(item => item.user_id === user!.id);
     const now = new Date().toISOString();
     const next: GameProgress = existing ? {
@@ -57,20 +65,20 @@ export function ProgressList({ game }: { game: Game }) {
       finished_at: status === 'finished' ? existing.finished_at || now : null,
       rating: status === 'finished' ? existing.rating : null,
     } : {
-      id: crypto.randomUUID(), user_id: user!.id, game_id: game.id, club_month: selectedMonth, status,
+      id: crypto.randomUUID(), user_id: user!.id, game_id: game.id, status,
       rating: null, started_at: status === 'not_started' ? null : now, finished_at: status === 'finished' ? now : null,
       profile: demoProfiles[0],
     };
     const nextProgress = progress.some(item => item.user_id === user!.id) ? progress.map(item => item.user_id === user!.id ? next : item) : [next, ...progress];
     if (isDemo) query.setData(nextProgress);
-    else await runOptimistic('Atualizando progresso…', () => query.setData(nextProgress), () => query.setData(progress), () => supabase.from('game_progress').upsert({ user_id: user!.id, game_id: game.id, club_month: selectedMonth, status: next.status, rating: next.rating, started_at: next.started_at, finished_at: next.finished_at }, { onConflict: 'user_id,game_id,club_month' }));
+    else await runOptimistic('Atualizando progresso…', () => query.setData(nextProgress), () => query.setData(progress), () => supabase.from('game_progress').upsert({ user_id: user!.id, game_id: game.id, status: next.status, rating: next.rating, started_at: next.started_at, finished_at: next.finished_at, updated_at: now }, { onConflict: 'user_id,game_id' }));
   }
 
   async function updateRating(rating: number) {
-    if (isHistorical) return;
+    if (snapshotMonth) return;
     const next = progress.map(item => item.user_id === user!.id ? { ...item, rating } : item);
     if (isDemo) query.setData(next);
-    else await runOptimistic('Salvando nota…', () => query.setData(next), () => query.setData(progress), () => supabase.from('game_progress').update({ rating }).eq('user_id', user!.id).eq('game_id', game.id).eq('club_month', selectedMonth));
+    else await runOptimistic('Salvando nota…', () => query.setData(next), () => query.setData(progress), () => supabase.from('game_progress').update({ rating, updated_at: new Date().toISOString() }).eq('user_id', user!.id).eq('game_id', game.id));
   }
 
   const mine = progress.find(item => item.user_id === user!.id);
@@ -78,11 +86,11 @@ export function ProgressList({ game }: { game: Game }) {
   return (
     <div className="space-y-4">
       <section className="progress-status-card rounded-2xl border border-white/8 bg-white/[0.025] p-4">
-        <div className="flex items-center justify-between gap-3"><div><h2 className="text-sm font-extrabold">Meu progresso</h2><p className="mt-0.5 text-[11px] text-zinc-500">{isHistorical ? 'Fechado ao final do mês.' : 'Atualize conforme você avança.'}</p></div>{mine && <span className={`text-xs font-bold ${statusMeta[mine.status].color}`}>{statusMeta[mine.status].label}</span>}</div>
+        <div className="flex items-center justify-between gap-3"><div><h2 className="text-sm font-extrabold">Meu progresso</h2><p className="mt-0.5 text-[11px] text-zinc-500">{snapshotMonth ? 'Estado registrado no encerramento deste ciclo.' : 'Este status acompanha o jogo em qualquer ciclo.'}</p></div>{mine && <span className={`text-xs font-bold ${statusMeta[mine.status].color}`}>{statusMeta[mine.status].label}</span>}</div>
         <div className="mt-4 grid grid-cols-3 gap-2">
-          {(Object.keys(statusMeta) as ProgressStatus[]).map(status => { const MetaIcon = statusMeta[status].icon; return <button key={status} data-selected={mine?.status === status} disabled={isHistorical} onClick={() => void updateStatus(status)} className={`progress-status-option flex min-w-0 flex-col items-center justify-center gap-1.5 rounded-xl border px-1 py-3 text-[10px] font-bold transition disabled:cursor-not-allowed ${mine?.status === status ? 'border-violet-400/35 bg-violet-500/15 text-violet-200' : 'border-white/8 bg-white/[0.025] text-zinc-500 hover:bg-white/5'}`}><MetaIcon className="size-4" /><span className="max-w-full truncate whitespace-nowrap">{statusMeta[status].label}</span></button>; })}
+          {(Object.keys(statusMeta) as ProgressStatus[]).map(status => { const MetaIcon = statusMeta[status].icon; return <button key={status} disabled={Boolean(snapshotMonth)} data-selected={mine?.status === status} onClick={() => void updateStatus(status)} className={`progress-status-option flex min-w-0 flex-col items-center justify-center gap-1.5 rounded-xl border px-1 py-3 text-[10px] font-bold transition disabled:cursor-default ${mine?.status === status ? 'border-violet-400/35 bg-violet-500/15 text-violet-200' : 'border-white/8 bg-white/[0.025] text-zinc-500 enabled:hover:bg-white/5'}`}><MetaIcon className="size-4" /><span className="max-w-full truncate whitespace-nowrap">{statusMeta[status].label}</span></button>; })}
         </div>
-        {mine?.status === 'finished' && <div className="mt-4 flex animate-pop-in flex-wrap items-center justify-between gap-3 border-t border-white/8 pt-4"><div><span className="block text-xs font-bold text-zinc-400">Minha nota</span><span className="mt-0.5 block text-[10px] text-zinc-600">de ½ a 5 estrelas</span></div><LetterboxdRating value={mine.rating} onChange={rating => void updateRating(rating)} disabled={isHistorical} /></div>}
+        {mine?.status === 'finished' && <div className="mt-4 flex animate-pop-in flex-wrap items-center justify-between gap-3 border-t border-white/8 pt-4"><div><span className="block text-xs font-bold text-zinc-400">Minha nota</span><span className="mt-0.5 block text-[10px] text-zinc-600">de ½ a 5 estrelas</span></div><LetterboxdRating value={mine.rating} disabled={Boolean(snapshotMonth)} onChange={rating => void updateRating(rating)} /></div>}
       </section>
 
       <div className="flex items-center justify-between"><h2 className="text-sm font-extrabold">Progresso do clube</h2><span className="text-[10px] font-bold uppercase tracking-wider text-zinc-600">{formatFinishedCount(progress.filter(item => item.status === 'finished').length)}</span></div>

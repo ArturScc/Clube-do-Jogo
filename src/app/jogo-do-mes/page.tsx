@@ -17,14 +17,14 @@ import { useUrlTab } from '@/hooks/use-url-state';
 
 export default function GameOfMonthPage() {
   const supabase = useMemo(() => createClient(), []);
-  const { selectedMonth, isHistorical, isDemo } = useApp();
-  const { data: game, isInitialLoading } = useStaleQuery(`game-of-month:${selectedMonth}`, () => fetchGameOfMonth(supabase, selectedMonth, isDemo));
+  const { selectedMonth, isHistorical, isDemo, clubRevision, cycles } = useApp();
+  const { data: game, isInitialLoading } = useStaleQuery(`game-of-month:${selectedMonth}:${clubRevision}`, () => isDemo ? Promise.resolve(cycles.find(item => item.month === selectedMonth)?.game || null) : fetchGameOfMonth(supabase, selectedMonth, false));
   const [activeTab, setActiveTab] = useUrlTab('section', ['timeline', 'progress', 'notes'] as const, 'timeline');
 
   if (isInitialLoading) return <div className="mx-auto max-w-3xl space-y-5"><Skeleton className="mx-auto aspect-[3/4] w-44 rounded-3xl" /><Skeleton className="mx-auto h-9 w-64" /><Skeleton className="h-12 w-full" /><Skeleton className="h-64 w-full rounded-3xl" /></div>;
 
   if (!game) return (
-    <div className="mx-auto grid min-h-[65dvh] max-w-xl place-items-center text-center"><div><CalendarClock className="mx-auto size-10 text-zinc-700" /><h1 className="mt-4 text-xl font-black">Jogo ainda não definido</h1><p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-zinc-500">Não há um vencedor consolidado para {formatMonth(selectedMonth)}. O jogo é definido quando a votação anterior encerra.</p></div></div>
+    <div className="mx-auto grid min-h-[65dvh] max-w-xl place-items-center text-center"><div><CalendarClock className="mx-auto size-10 text-zinc-700" /><h1 className="mt-4 text-xl font-black">Jogo ainda não definido</h1><p className="mx-auto mt-2 max-w-sm text-sm leading-relaxed text-zinc-500">Um administrador ainda não definiu o jogo de {formatMonth(selectedMonth)}.</p></div></div>
   );
 
   return (
@@ -40,8 +40,6 @@ export default function GameOfMonthPage() {
         </div>
       </section>
 
-      {isHistorical && <div className="mb-4 rounded-2xl border border-amber-500/15 bg-amber-500/[0.07] px-4 py-3 text-xs leading-relaxed text-amber-200/75">Você está revisitando {formatMonth(selectedMonth)}. Comentários, progresso e anotações estão somente para leitura.</div>}
-
       <Tabs.Root value={activeTab} onValueChange={value => setActiveTab(value as typeof activeTab)}>
         <Tabs.List aria-label="Seções do jogo do mês" className="app-tabs sticky top-[calc(4rem+env(safe-area-inset-top))] z-30 mb-5 grid grid-cols-3 rounded-2xl border border-white/8 bg-[#0c0c0f]/92 p-1.5 shadow-xl backdrop-blur-xl">
           <Tabs.Trigger value="timeline" className="flex min-w-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-1 py-2.5 text-[11px] font-extrabold text-zinc-500 outline-none transition data-[state=active]:bg-violet-500/15 data-[state=active]:text-violet-300"><MessageCircle className="size-3.5" /><span className="truncate">Timeline</span></Tabs.Trigger>
@@ -49,8 +47,8 @@ export default function GameOfMonthPage() {
           <Tabs.Trigger value="notes" className="flex min-w-0 items-center justify-center gap-1.5 whitespace-nowrap rounded-xl px-1 py-2.5 text-[11px] font-extrabold text-zinc-500 outline-none transition data-[state=active]:bg-violet-500/15 data-[state=active]:text-violet-300"><NotebookPen className="size-3.5" /><span className="truncate">Anotações</span></Tabs.Trigger>
         </Tabs.List>
         <Tabs.Content value="timeline" className="outline-none data-[state=active]:animate-tab-in"><Timeline game={game} /></Tabs.Content>
-        <Tabs.Content value="progress" className="outline-none data-[state=active]:animate-tab-in"><ProgressList game={game} /></Tabs.Content>
-        <Tabs.Content value="notes" className="outline-none data-[state=active]:animate-tab-in"><NotesChat game={game} /></Tabs.Content>
+        <Tabs.Content value="progress" className="outline-none data-[state=active]:animate-tab-in"><ProgressList game={game} snapshotMonth={isHistorical ? selectedMonth : undefined} /></Tabs.Content>
+        <Tabs.Content value="notes" className="outline-none data-[state=active]:animate-tab-in"><NotesChat game={game} snapshotMonth={isHistorical ? selectedMonth : undefined} /></Tabs.Content>
       </Tabs.Root>
     </div>
   );

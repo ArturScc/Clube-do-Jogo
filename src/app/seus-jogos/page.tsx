@@ -61,9 +61,15 @@ export function YourGamesPanel({ embedded = false }: { embedded?: boolean }) {
       query.setData(next);
       return;
     }
-    const request = finished
-      ? supabase.from('completed_games').upsert({ user_id: user!.id, game_id: game.id }, { onConflict: 'user_id,game_id' })
-      : supabase.from('completed_games').delete().eq('user_id', user!.id).eq('game_id', game.id);
+    const now = new Date().toISOString();
+    const request = supabase.from('game_progress').upsert({
+      user_id: user!.id,
+      game_id: game.id,
+      status: finished ? 'finished' : 'started',
+      started_at: now,
+      finished_at: finished ? now : null,
+      updated_at: now,
+    }, { onConflict: 'user_id,game_id' });
     await runOptimistic(finished ? 'Marcando como finalizado…' : 'Removendo finalização…', () => query.setData(next), () => query.setData(data), () => request);
   }
 

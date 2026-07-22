@@ -19,6 +19,7 @@ import { ParticipantsDialog } from '@/components/participants-dialog';
 import { GameActionButton } from '@/components/game-action-button';
 import { useUrlDialog } from '@/hooks/use-url-state';
 import { LoadingToast } from '@/components/ui/loading-toast';
+import { ClubGameAdminDialog } from '@/components/club-game-admin-dialog';
 
 const rankingMotion = { type: 'spring', stiffness: 460, damping: 30, mass: 0.55 } as const;
 
@@ -54,7 +55,7 @@ function PeopleStack({ people }: { people: RankingItem['voters'] }) {
 
 export default function RankingPage() {
   const supabase = useMemo(() => createClient(), []);
-  const { user, profile, isDemo, selectedMonth, isHistorical, runOptimistic } = useApp();
+  const { user, profile, isDemo, isAdmin, selectedMonth, isHistorical, runOptimistic, clubRevision } = useApp();
   const voteMonth = shiftMonth(selectedMonth, 1);
   const [showAll, setShowAll] = useState(false);
   const [query, setQuery] = useState('');
@@ -63,7 +64,7 @@ export default function RankingPage() {
   const [searchError, setSearchError] = useState('');
   const [rankingParent] = useAutoAnimate<HTMLDivElement>({ duration: 160, easing: 'cubic-bezier(.22, 1, .36, 1)' });
   const { data: ranking = [], isInitialLoading, isRefreshing, setData } = useStaleQuery(
-    `ranking:${selectedMonth}:${isHistorical}:${user?.id}`,
+    `ranking:${selectedMonth}:${isHistorical}:${user?.id}:${clubRevision}`,
     () => fetchRankingData(supabase, selectedMonth, user!.id, isDemo, isHistorical),
     Boolean(user),
   );
@@ -117,9 +118,15 @@ export default function RankingPage() {
       setData(next);
       return;
     }
-    const request = item.completedByMe
-      ? supabase.from('completed_games').delete().eq('user_id', user!.id).eq('game_id', item.game.id)
-      : supabase.from('completed_games').insert({ user_id: user!.id, game_id: item.game.id });
+    const now = new Date().toISOString();
+    const request = supabase.from('game_progress').upsert({
+      user_id: user!.id,
+      game_id: item.game.id,
+      status: item.completedByMe ? 'started' : 'finished',
+      started_at: now,
+      finished_at: item.completedByMe ? null : now,
+      updated_at: now,
+    }, { onConflict: 'user_id,game_id' });
     await runOptimistic(item.completedByMe ? 'Removendo finalização…' : 'Marcando como finalizado…', () => setData(next), () => setData(previous), () => request);
   }
 
@@ -207,10 +214,11 @@ export default function RankingPage() {
           {visibleRanking.map((item, index) => (
             <article key={item.game.id} data-rank={index + 1} className={`ranking-card relative min-w-0 rounded-2xl border p-3 transition ${index === 0 ? 'border-amber-400/25 bg-gradient-to-br from-amber-400/[.07] to-white/[.025]' : 'border-white/[.07] bg-white/[.025]'}`}>
               {index < 3 ? <span aria-label={`${index + 1}º lugar`} className={`ranking-medal ranking-medal-${index + 1} absolute -left-2.5 -top-2.5 z-20 grid size-11 place-items-center rounded-full border border-white/35 shadow-[0_7px_14px_rgba(0,0,0,.35),inset_1px_1px_1px_rgba(255,255,255,.52),inset_-2px_-2px_4px_rgba(0,0,0,.2)] ${index === 0 ? 'bg-[radial-gradient(circle_at_31%_24%,rgba(255,255,255,.7),transparent_23%),linear-gradient(145deg,#fcd34d,#d97706)] text-amber-950' : index === 1 ? 'bg-[radial-gradient(circle_at_31%_24%,rgba(255,255,255,.75),transparent_23%),linear-gradient(145deg,#f4f4f5,#9ca3af)] text-zinc-800' : 'bg-[radial-gradient(circle_at_31%_24%,rgba(255,255,255,.55),transparent_23%),linear-gradient(145deg,#d97706,#78350f)] text-amber-50'}`}><Trophy className="size-5 stroke-[1.65]" /><span className="ranking-medal-number absolute -bottom-0.5 -right-0.5 grid size-4 place-items-center rounded-full border border-white/10 bg-zinc-950 text-[8px] font-black text-white">{index + 1}</span></span> : <span className="ranking-position absolute -left-1.5 -top-1.5 z-20 grid size-7 place-items-center rounded-full border-2 border-[#08080a] bg-zinc-800 text-[9px] font-black text-zinc-400">{index + 1}</span>}
+              <ClubGameAdminDialog game={item.game} variant="icon" className={`absolute top-2 z-20 ${isHistorical ? 'right-2' : 'right-12'}`} />
               {!isHistorical && <DropdownMenu.Root><DropdownMenu.Trigger aria-label={`Opções de ${item.game.title}`} className="ranking-menu-trigger absolute right-2 top-2 z-20 grid size-8 place-items-center rounded-full bg-zinc-950/75 text-zinc-400 backdrop-blur hover:bg-zinc-800 hover:text-white"><MoreHorizontal className="size-4" /></DropdownMenu.Trigger><DropdownMenu.Portal><DropdownMenu.Content align="end" sideOffset={6} className="app-popup animated-popup z-[100] min-w-52 rounded-xl border border-white/10 bg-zinc-900 p-1.5 shadow-2xl outline-none"><DropdownMenu.Item disabled={item.inBacklog} onSelect={() => void addToBacklog(item)} className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-xs font-bold text-zinc-300 outline-none data-[disabled]:text-emerald-400 data-[highlighted]:bg-white/8">{item.inBacklog ? <Check className="size-3.5" /> : <Library className="size-3.5" />}{item.inBacklog ? 'Jogo já no Backlog' : 'Adicionar jogo ao Backlog'}</DropdownMenu.Item></DropdownMenu.Content></DropdownMenu.Portal></DropdownMenu.Root>}
               <div className="ranking-card-summary flex min-w-0 gap-3">
                 <Link href={`/jogos/${item.game.id}`} className="h-[112px] w-[82px] shrink-0 overflow-hidden rounded-xl bg-zinc-900 min-[380px]:h-[120px] min-[380px]:w-[88px]"><img src={item.game.image_url} alt={`Capa de ${item.game.title}`} className="size-full object-cover" /></Link>
-                <div className="flex min-w-0 flex-1 flex-col justify-center py-1 pr-7">
+                <div className={`flex min-w-0 flex-1 flex-col justify-center py-1 ${isAdmin ? 'pr-16' : 'pr-7'}`}>
                   <Link href={`/jogos/${item.game.id}`} className="block break-words text-sm font-extrabold leading-snug hover:text-violet-300">{item.game.title}</Link>
                   <div className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1 text-[10px] text-zinc-500"><span className="inline-flex items-center gap-1 whitespace-nowrap"><Clock3 className="size-3" />{item.game.duration_hours} h</span><AnimatedCount count={item.votesCount} label={item.votesCount === 1 ? 'voto' : 'votos'} className="inline-flex whitespace-nowrap" /></div>
                   <div className="ranking-score mt-2.5 whitespace-nowrap text-2xl font-black leading-none text-emerald-400"><AnimatedPoints value={item.totalPoints} /><span className="ml-1 text-[10px] font-bold text-zinc-500">pts</span></div>
@@ -229,7 +237,7 @@ export default function RankingPage() {
             </article>
           ))}
           {ranking.length > 10 && <button onClick={() => setShowAll(value => !value)} className="flex h-11 w-full items-center justify-center gap-2 whitespace-nowrap rounded-xl border border-white/8 bg-white/[0.025] text-xs font-bold text-zinc-300 transition hover:bg-white/5">{showAll ? <ChevronUp className="size-4" /> : <ChevronDown className="size-4" />}{showAll ? 'Mostrar somente o top 10' : `Ver todos os ${ranking.length} jogos`}</button>}
-          <div className="flex items-start gap-2 rounded-2xl bg-white/[0.025] p-3 text-[11px] leading-relaxed text-zinc-500"><CircleHelp className="mt-0.5 size-4 shrink-0" /><span>Em caso de empate, o título em ordem alfabética define a posição. O vencedor é consolidado quando o mês termina.</span></div>
+          <div className="flex items-start gap-2 rounded-2xl bg-white/[0.025] p-3 text-[11px] leading-relaxed text-zinc-500"><CircleHelp className="mt-0.5 size-4 shrink-0" /><span>Em caso de empate, o título em ordem alfabética define a posição. O ranking é congelado quando um administrador inicia o próximo ciclo.</span></div>
         </div>
       )}
     </div>

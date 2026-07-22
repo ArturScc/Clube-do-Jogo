@@ -5,12 +5,16 @@ const STORE_NAME = 'notes';
 
 function openDatabase(): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, 1);
+    const request = indexedDB.open(DB_NAME, 2);
     request.onupgradeneeded = () => {
       const database = request.result;
       if (!database.objectStoreNames.contains(STORE_NAME)) {
         const store = database.createObjectStore(STORE_NAME, { keyPath: 'id' });
-        store.createIndex('context', ['userId', 'gameId', 'clubMonth']);
+        store.createIndex('game', ['userId', 'gameId']);
+      } else {
+        const store = request.transaction!.objectStore(STORE_NAME);
+        if (store.indexNames.contains('context')) store.deleteIndex('context');
+        if (!store.indexNames.contains('game')) store.createIndex('game', ['userId', 'gameId']);
       }
     };
     request.onsuccess = () => resolve(request.result);
@@ -18,11 +22,11 @@ function openDatabase(): Promise<IDBDatabase> {
   });
 }
 
-export async function loadNotes(userId: string, gameId: string, clubMonth: string): Promise<LocalNote[]> {
+export async function loadNotes(userId: string, gameId: string): Promise<LocalNote[]> {
   const database = await openDatabase();
   return new Promise((resolve, reject) => {
     const transaction = database.transaction(STORE_NAME, 'readonly');
-    const request = transaction.objectStore(STORE_NAME).index('context').getAll([userId, gameId, clubMonth]);
+    const request = transaction.objectStore(STORE_NAME).index('game').getAll([userId, gameId]);
     request.onsuccess = () => resolve((request.result as LocalNote[]).sort((a, b) => a.createdAt.localeCompare(b.createdAt)));
     request.onerror = () => reject(request.error);
     transaction.oncomplete = () => database.close();

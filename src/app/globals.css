@@ -1309,6 +1309,53 @@ body,
   }
 }
 
+/* Administration follows each visual identity instead of introducing a
+   fourth, dashboard-like language. */
+.admin-choice { white-space: normal; }
+.admin-choice[data-emphasis='secondary'] { border-color: rgb(255 255 255 / 8%); background: rgb(255 255 255 / 3.5%); color: #d4d4d8; }
+.admin-choice[data-emphasis='secondary'] span span { color: #71717a; }
+.admin-choice[data-emphasis='secondary']:hover { background: rgb(255 255 255 / 6%); }
+.admin-choice[data-emphasis='primary'] { border-color: rgb(251 191 36 / 24%); background: rgb(245 158 11 / 12%); color: #fef3c7; box-shadow: 0 10px 30px rgb(0 0 0 / 12%); }
+.admin-choice[data-emphasis='primary'] span span { color: #a1a1aa; }
+.admin-choice[data-emphasis='primary']:hover { border-color: rgb(251 191 36 / 38%); background: rgb(245 158 11 / 17%); }
+.admin-choice-icon { background: rgb(245 158 11 / 12%); color: #fcd34d; }
+:root[data-theme='zelda'] :is(.admin-user-card, .admin-entry, .admin-choice) {
+  border-color: rgb(211 181 99 / 22%) !important;
+  background: #10120f !important;
+  box-shadow: none !important;
+}
+:root[data-theme='zelda'] .admin-choice:hover { border-color: rgb(224 195 113 / 42%) !important; background: #15170f !important; }
+:root[data-theme='zelda'] .admin-choice[data-emphasis='primary'] { border-color: rgb(224 195 113 / 48%) !important; background: rgb(211 181 99 / 14%) !important; box-shadow: inset 0 0 0 1px rgb(211 181 99 / 8%) !important; }
+:root[data-theme='zelda'] .admin-choice[data-emphasis='secondary'] { opacity: .82; }
+:root[data-theme='zelda'] .club-admin-trigger { border-color: rgb(211 181 99 / 36%) !important; background: rgb(211 181 99 / 13%) !important; color: #e5ce8c !important; }
+
+:root[data-theme='nier'] :is(.admin-user-card, .admin-entry, .admin-choice) {
+  border: 0 !important;
+  border-left: 4px solid #4b413d !important;
+  border-radius: 0 !important;
+  background: #d8d2bc !important;
+  color: #4b413d !important;
+  box-shadow: 4px 4px 0 rgb(75 65 61 / 14%) !important;
+}
+:root[data-theme='nier'] .admin-choice:hover { background: #c9c3ad !important; }
+:root[data-theme='nier'] .admin-choice :is(strong, span) { color: #4b413d !important; }
+:root[data-theme='nier'] .admin-choice[data-emphasis='primary'] { border-left-color: #8f2424 !important; background: #4b413d !important; }
+:root[data-theme='nier'] .admin-choice[data-emphasis='primary'] :is(strong, span) { color: #e3deca !important; }
+:root[data-theme='nier'] .admin-choice[data-emphasis='primary'] .admin-choice-icon { background: #8f2424 !important; color: #e3deca !important; }
+:root[data-theme='nier'] .admin-choice[data-emphasis='secondary'] { opacity: .82; }
+:root[data-theme='nier'] .club-admin-trigger { border-color: #4b413d !important; border-radius: 0 !important; background: #4b413d !important; color: #e3deca !important; }
+:root[data-theme='nier'] .admin-role-badge { border-radius: 0 !important; background: #c9c3ad !important; color: #4b413d !important; }
+
+:root[data-theme='crossing'] :is(.admin-user-card, .admin-entry, .admin-choice) {
+  border: 0 !important;
+  background: #fff8df !important;
+  color: #3f5f56 !important;
+  box-shadow: var(--theme-shadow) !important;
+}
+:root[data-theme='crossing'] .admin-choice:hover { background: #f1e9c9 !important; }
+:root[data-theme='crossing'] .club-admin-trigger { border: 0 !important; background: #dfb64e !important; color: #5e501e !important; box-shadow: inset 0 0 0 2px #f6df91, 0 4px 0 -1px rgb(121 102 37 / 24%) !important; }
+:root[data-theme='crossing'] .admin-role-badge { background: #d7eee5 !important; color: #39724f !important; }
+
 * {
   box-sizing: border-box;
 }

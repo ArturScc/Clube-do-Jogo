@@ -20,7 +20,26 @@ Abra [http://localhost:3000](http://localhost:3000). Sem variáveis do Supabase,
 
 ## Banco de dados
 
-Em um projeto novo, execute `schema.sql` no SQL Editor do Supabase. Em seguida — ou em uma instalação existente — execute `migration_monthly_club.sql`. Essa migração restaura a dimensão mensal que uma migração antiga removia e adiciona jogo do mês, progresso, comentários, reações, metadados de mídia e snapshots imutáveis do ranking. Em instalações que já executaram uma versão anterior da migração, execute novamente o arquivo atualizado para criar a preservação histórica.
+Em um projeto novo, execute `schema.sql` no SQL Editor do Supabase. Em seguida — ou em uma instalação existente — execute, nesta ordem:
+
+1. `migration_monthly_club.sql`
+2. `migration_admin_cycles_game_data.sql`
+
+A segunda migração adiciona cargos, histórico administrativo, ciclos encerrados manualmente no encontro, progresso permanente por jogo e anotações privadas sincronizadas. Ao encerrar um ciclo, ela também salva fotografias imutáveis do progresso do clube e das anotações privadas para que a consulta daquele mês permaneça parada no tempo. Ela consolida os registros mensais de progresso existentes e preserva os jogos já marcados como finalizados.
+
+Como o banco antigo não guardava essas fotografias, ciclos encerrados antes da aplicação da migration recebem um backfill com o melhor estado disponível no momento da atualização. A partir do primeiro encerramento posterior à migration, o estado salvo é exatamente o estado da transação que encerrou o ciclo.
+
+Decisões administrativas de ciclo ficam registradas e podem ser desfeitas em sequência. Se o ciclo já recebeu comentários, reações ou votos, a interface informa as quantidades e exige uma confirmação destrutiva. Depois de desfazer, o administrador tem 5 minutos para refazer; qualquer nova definição manual invalida os redos pendentes.
+
+Depois de criar o usuário administrativo em **Authentication → Users**, promova-o pelo SQL Editor, substituindo o e-mail:
+
+```sql
+INSERT INTO public.user_roles (user_id, role)
+SELECT id, 'admin' FROM auth.users WHERE email = 'admin@seu-dominio.com'
+ON CONFLICT (user_id) DO UPDATE SET role = 'admin', updated_at = NOW();
+```
+
+Senhas nunca devem ser gravadas nas migrations nem no repositório.
 
 ## Variáveis de ambiente
 
@@ -51,7 +70,7 @@ No Supabase, abra **Authentication → URL Configuration**:
 
 O cadastro envia explicitamente `emailRedirectTo` para `/auth/callback`, e o callback valida o caminho de retorno para impedir redirects externos. A Vercel fornece `VERCEL_PROJECT_PRODUCTION_URL` e `VERCEL_URL` sem o protocolo; o código acrescenta `https://` no servidor.
 
-As anotações (texto e imagens) são privadas e ficam apenas no IndexedDB do dispositivo. Elas não são enviadas ao Supabase.
+As anotações (texto e imagens) são privadas e sincronizadas pelo Supabase, com políticas que permitem acesso somente ao proprietário. Ao abrir um jogo pela primeira vez depois da atualização, anotações antigas do IndexedDB daquele dispositivo são migradas automaticamente.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
 
