@@ -14,7 +14,7 @@ export interface IGDBGameResult {
 }
 
 export interface IGDBPlatformResult {
-  id: number;
+  igdb_platform_id: number;
   name: string;
   abbreviation: string | null;
   logo_url: string | null;
@@ -112,7 +112,7 @@ export async function searchPlatformsWithIGDB(query: string): Promise<IGDBPlatfo
   if (!response.ok) throw new Error(`Erro na busca de plataformas IGDB: ${await response.text()}`);
   const platforms: IGDBPlatform[] = await response.json();
   return (platforms || []).map(platform => ({
-    id: platform.id,
+    igdb_platform_id: platform.id,
     name: platform.name,
     abbreviation: platform.abbreviation ?? null,
     logo_url: platform.platform_logo?.image_id
