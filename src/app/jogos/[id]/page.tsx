@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef } from 'react';
-import { useParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import * as Tabs from '@radix-ui/react-tabs';
 import { CalendarDays, CheckCircle2, Clock3, Gamepad2, ImageIcon, Info, ListChecks, NotebookPen, Play, Share2, Star, Trash2, UsersRound } from 'lucide-react';
@@ -27,6 +27,8 @@ interface GamePeople { voters: Profile[]; completed: Profile[]; votedByMe: boole
 
 export default function GamePage() {
   const params = useParams<{ id: string }>();
+  const searchParams = useSearchParams();
+  const isPreview = searchParams.get('preview') === '1';
   const supabase = useMemo(() => createClient(), []);
   const { user, isDemo, selectedMonth, isHistorical, runOptimistic, clubRevision } = useApp();
   const voteMonth = shiftMonth(selectedMonth, 1);
@@ -133,7 +135,7 @@ export default function GamePage() {
         <div className="game-detail-summary relative flex min-w-0 flex-col items-center gap-5 text-center sm:flex-row sm:items-start sm:text-left">
           <div className="game-detail-cover aspect-[3/4] w-40 shrink-0 overflow-hidden rounded-2xl border border-white/15 bg-zinc-900 shadow-2xl sm:w-52"><img src={game.image_url} alt={`Capa de ${game.title}`} className="size-full object-cover" /></div>
           <div className="game-detail-info min-w-0 flex-1 pt-5 sm:pt-7"><h1 className="break-words text-3xl font-black tracking-[-0.035em] sm:text-5xl">{game.title}</h1><div className="mt-3 flex flex-wrap justify-center gap-2 text-[11px] font-bold text-zinc-400 sm:justify-start"><span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-white/6 px-3 py-1.5"><Clock3 className="size-3.5" />{game.duration_hours} horas</span>{game.average_rating && <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-amber-500/10 px-3 py-1.5 text-amber-300"><Star className="size-3.5 fill-current" />{Math.round(game.average_rating)}/100</span>}{game.release_year && <span className="inline-flex items-center gap-1.5 whitespace-nowrap rounded-full bg-white/6 px-3 py-1.5"><CalendarDays className="size-3.5" />{game.release_year}</span>}</div><p className="mt-5 max-w-2xl text-sm leading-7 text-zinc-300">{game.description || 'Sem descrição disponível.'}</p>
-            <div className="game-detail-actions mt-5 flex flex-wrap justify-center gap-2">
+            {!isPreview && <><div className="game-detail-actions mt-5 flex flex-wrap justify-center gap-2">
               {people.inBacklog ? (
                 <DropdownMenu.Root>
                   <DropdownMenu.Trigger asChild><GameActionButton kind="backlog" active className="h-10 px-4" aria-label="Opções do backlog" /></DropdownMenu.Trigger>
@@ -148,28 +150,30 @@ export default function GamePage() {
               ) : <GameActionButton kind="backlog" active={false} onClick={() => void addToBacklog()} className="h-10 px-4" />}
               <GameActionButton kind="vote" active={people.votedByMe} disabled={isHistorical} onClick={() => void toggleVote()} className="h-10 px-4" />
             </div>
-            <ClubGameAdminDialog game={game} className="mt-3" />
+            <ClubGameAdminDialog game={game} className="mt-3" /></>}
           </div>
         </div>
       </section>
 
       <Tabs.Root value={activeSection} onValueChange={value => setActiveSection(value as typeof activeSection)} className="mt-4">
+        {!isPreview && <>
         <Tabs.List aria-label="Seções do jogo" className="app-tabs sticky top-[calc(4rem+env(safe-area-inset-top))] z-30 mb-5 grid grid-cols-3 rounded-2xl border border-white/8 bg-[#0c0c0f]/92 p-1.5 shadow-xl backdrop-blur-xl min-[960px]:top-4">
           <Tabs.Trigger value="about" className="flex min-w-0 items-center justify-center gap-1.5 rounded-xl px-1 py-2.5 text-[11px] font-extrabold text-zinc-500 outline-none data-[state=active]:bg-violet-500/15 data-[state=active]:text-violet-300"><Info className="size-3.5" /><span className="truncate">Sobre</span></Tabs.Trigger>
           <Tabs.Trigger value="progress" className="flex min-w-0 items-center justify-center gap-1.5 rounded-xl px-1 py-2.5 text-[11px] font-extrabold text-zinc-500 outline-none data-[state=active]:bg-violet-500/15 data-[state=active]:text-violet-300"><ListChecks className="size-3.5" /><span className="truncate">Progresso</span></Tabs.Trigger>
           <Tabs.Trigger value="notes" className="flex min-w-0 items-center justify-center gap-1.5 rounded-xl px-1 py-2.5 text-[11px] font-extrabold text-zinc-500 outline-none data-[state=active]:bg-violet-500/15 data-[state=active]:text-violet-300"><NotebookPen className="size-3.5" /><span className="truncate">Anotações</span></Tabs.Trigger>
         </Tabs.List>
+        </>}
 
         <Tabs.Content value="about" className="outline-none data-[state=active]:animate-tab-in">
-          <ParticipantsDialog dialogId={params.id} voters={people.voters} completed={people.completed}><button className="participation-card flex w-full min-w-0 items-center justify-between gap-2 rounded-2xl border border-white/8 bg-white/[0.025] p-4 text-left transition hover:bg-white/5"><span className="flex min-w-0 items-center gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-xl bg-violet-500/10 text-violet-300"><UsersRound className="size-4" /></span><span className="min-w-0"><strong className="block text-sm">Participação</strong><span className="block truncate text-[10px] text-zinc-500 min-[360px]:text-[11px]">{people.voters.length} votos · {formatFinishedCount(people.completed.length)}</span></span></span><span className="shrink-0 text-xs font-bold text-violet-300"><span className="min-[360px]:hidden">Ver</span><span className="hidden min-[360px]:inline">Ver pessoas</span></span></button></ParticipantsDialog>
+          {!isPreview && <ParticipantsDialog dialogId={params.id} voters={people.voters} completed={people.completed}><button className="participation-card flex w-full min-w-0 items-center justify-between gap-2 rounded-2xl border border-white/8 bg-white/[0.025] p-4 text-left transition hover:bg-white/5"><span className="flex min-w-0 items-center gap-3"><span className="grid size-10 shrink-0 place-items-center rounded-xl bg-violet-500/10 text-violet-300"><UsersRound className="size-4" /></span><span className="min-w-0"><strong className="block text-sm">Participação</strong><span className="block truncate text-[10px] text-zinc-500 min-[360px]:text-[11px]">{people.voters.length} votos · {formatFinishedCount(people.completed.length)}</span></span></span><span className="shrink-0 text-xs font-bold text-violet-300"><span className="min-[360px]:hidden">Ver</span><span className="hidden min-[360px]:inline">Ver pessoas</span></span></button></ParticipantsDialog>}
 
           {(game.genres?.length || game.platforms?.length) && <section className="mt-8 space-y-5"><div className="border-t border-white/8" />{game.genres?.length ? <div><h2 className="text-sm font-extrabold">Gêneros</h2><div className="mt-2.5 flex flex-wrap gap-2">{game.genres.map(genre => <span key={genre} className="rounded-full bg-white/[0.05] px-3 py-1.5 text-xs font-semibold text-zinc-400">{genre}</span>)}</div></div> : null}{game.platforms?.length ? <div><h2 className="text-sm font-extrabold">Plataformas</h2><div className="mt-2.5 flex flex-wrap gap-2">{game.platforms.map((platform, index) => { const owned = ownedPlatformIds.has(game.platform_ids?.[index] ?? -1); return <span key={platform} className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold ${owned ? 'border border-emerald-400/25 bg-emerald-500/[.12] text-emerald-200' : 'bg-white/[0.05] text-zinc-400'}`}>{owned && <CheckCircle2 className="size-3.5 shrink-0" />}{platform}</span>; })}</div></div> : null}</section>}
 
           {screenshots.length > 0 && <section className="mt-8"><div className="mb-3 flex items-center gap-2"><ImageIcon className="size-4 text-violet-400" /><h2 className="text-base font-extrabold">Imagens do jogo</h2></div><GameGallery title={game.title} images={screenshots} /></section>}
           {trailer && <section className="mt-8"><div className="mb-3 flex items-center gap-2"><Play className="size-4 fill-violet-400 text-violet-400" /><h2 className="text-base font-extrabold">Trailer</h2></div><div className="game-trailer-card overflow-hidden rounded-2xl border border-white/10 bg-black shadow-2xl"><FloatingTrailer src={trailer} title={`Trailer de ${game.title}`} /></div></section>}
         </Tabs.Content>
-        <Tabs.Content value="progress" className="outline-none data-[state=active]:animate-tab-in"><ProgressList game={game} /></Tabs.Content>
-        <Tabs.Content value="notes" className="outline-none data-[state=active]:animate-tab-in"><NotesChat game={game} /></Tabs.Content>
+        {!isPreview && <><Tabs.Content value="progress" className="outline-none data-[state=active]:animate-tab-in"><ProgressList game={game} /></Tabs.Content>
+        <Tabs.Content value="notes" className="outline-none data-[state=active]:animate-tab-in"><NotesChat game={game} /></Tabs.Content></>}
       </Tabs.Root>
     </div>
   );

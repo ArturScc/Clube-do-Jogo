@@ -1,10 +1,11 @@
 'use client';
 
 import { useEffect, useMemo, useState } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import * as Tabs from '@radix-ui/react-tabs';
 import { useAutoAnimate } from '@formkit/auto-animate/react';
-import { Clock3, Gamepad2, Library, Plus, Search, Trash2 } from 'lucide-react';
+import { CalendarDays, Clock3, Gamepad2, Library, Plus, Search, Star, Trash2 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { fetchProfileWithGames } from '@/lib/data';
 import type { Game, UserPlatform } from '@/lib/types';
@@ -230,7 +231,7 @@ export function YourGamesPanel({ embedded = false }: { embedded?: boolean }) {
               <div className="max-h-[55dvh] space-y-2 overflow-y-auto p-4">{platformSearching ? Array.from({ length: 3 }).map((_, index) => <Skeleton key={index} className="h-16 w-full" />) : platformError ? <p className="p-8 text-center text-sm text-red-300">{platformError}</p> : platformResults.length ? platformResults.map(platform => { const added = data?.platforms.some(item => item.igdb_platform_id === platform.igdb_platform_id); return <div key={platform.igdb_platform_id} className="flex min-w-0 items-center gap-3 rounded-2xl border border-white/8 bg-white/[0.025] p-3">{platform.logo_url ? <img src={platform.logo_url} alt="" className="size-10 shrink-0 rounded-lg object-contain" /> : <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-white/[.06] text-zinc-400"><Gamepad2 className="size-5" /></span>}<div className="min-w-0 flex-1"><div className="truncate text-sm font-bold">{platform.name}</div>{platform.abbreviation && <div className="mt-0.5 text-[11px] text-zinc-500">{platform.abbreviation}</div>}</div><button disabled={added} onClick={() => void addPlatform(platform)} type="button" className="shrink-0 rounded-lg bg-cyan-500/15 px-3 py-2 text-[11px] font-bold text-cyan-300 hover:bg-cyan-500 hover:text-white disabled:text-emerald-300">{added ? 'Adicionado' : 'Adicionar'}</button></div>; }) : <p className="p-10 text-center text-sm text-zinc-500">Digite o nome de um console para começar.</p>}</div>
             </DialogContent> : <DialogContent title={activeTab === 'backlog' ? 'Adicionar ao backlog' : 'Adicionar aos finalizados'} description={activeTab === 'backlog' ? 'Busque um jogo para guardar na sua lista.' : 'Busque um jogo já concluído por você.'}>
               <form onSubmit={searchGames} className="flex gap-2 border-b border-white/8 p-4"><label className="relative min-w-0 flex-1"><Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-zinc-600" /><input autoFocus value={searchQuery} onChange={event => setSearchQuery(event.target.value)} placeholder="Nome do jogo" className="h-11 w-full rounded-xl border border-white/10 bg-black/30 pl-10 pr-3 text-sm outline-none focus:border-violet-500" /></label><button disabled={searching} className="h-11 shrink-0 rounded-xl bg-violet-600 px-4 text-xs font-bold disabled:opacity-50">Buscar</button></form>
-              <div className="max-h-[55dvh] space-y-2 overflow-y-auto p-4">{searching ? Array.from({ length: 3 }).map((_, index) => <Skeleton key={index} className="h-24 w-full" />) : searchError ? <p className="p-8 text-center text-sm text-red-300">{searchError}</p> : results.length ? results.map(game => { const added = activeTab === 'backlog' ? data?.backlog.some(item => item.id === game.id) : data?.completed.some(item => item.id === game.id); return <div key={game.id} className="flex min-w-0 items-center gap-3 rounded-2xl border border-white/8 bg-white/[0.025] p-3"><img src={game.image_url} alt="" className="h-16 w-12 shrink-0 rounded-lg object-cover" /><div className="min-w-0 flex-1"><div className="truncate text-sm font-bold">{game.title}</div><div className="mt-1 flex items-center gap-1 text-[11px] text-zinc-500"><Clock3 className="size-3" />{game.duration_hours} h</div></div><button disabled={added} onClick={() => void (activeTab === 'backlog' ? addToBacklog(game) : markFinished(game, true))} type="button" className="shrink-0 rounded-lg bg-violet-500/15 px-3 py-2 text-[11px] font-bold text-violet-300 hover:bg-violet-500 hover:text-white disabled:text-emerald-300">{added ? (activeTab === 'backlog' ? 'No backlog' : 'Finalizado') : 'Adicionar'}</button></div>; }) : <p className="p-10 text-center text-sm text-zinc-500">Digite o nome de um jogo para começar.</p>}</div>
+              <div className="max-h-[55dvh] space-y-2 overflow-y-auto p-4">{searching ? Array.from({ length: 3 }).map((_, index) => <Skeleton key={index} className="h-24 w-full" />) : searchError ? <p className="p-8 text-center text-sm text-red-300">{searchError}</p> : results.length ? results.map(game => { const added = activeTab === 'backlog' ? data?.backlog.some(item => item.id === game.id) : data?.completed.some(item => item.id === game.id); return <GameSearchResult key={game.id} game={game} added={Boolean(added)} label={added ? (activeTab === 'backlog' ? 'No backlog' : 'Finalizado') : 'Adicionar'} onAdd={() => void (activeTab === 'backlog' ? addToBacklog(game) : markFinished(game, true))} />; }) : <p className="p-10 text-center text-sm text-zinc-500">Digite o nome de um jogo para começar.</p>}</div>
             </DialogContent>}
           </Dialog>
         </div>
@@ -246,6 +247,28 @@ export function YourGamesPanel({ embedded = false }: { embedded?: boolean }) {
         <Tabs.Content value="platforms" className="outline-none data-[state=active]:animate-tab-in">{query.isInitialLoading ? <ListSkeleton /> : data?.platforms.length ? <div className="flex flex-wrap gap-2">{data.platforms.map(platform => <span key={platform.igdb_platform_id} className="inline-flex h-10 items-center gap-2 rounded-lg border border-cyan-400/15 bg-cyan-500/[.07] py-1 pl-2 pr-1 text-xs font-bold text-cyan-100">{platform.logo_url ? <img src={platform.logo_url} alt="" className="size-6 object-contain" /> : <Gamepad2 className="size-4 text-cyan-300" />}<span>{platform.name}</span><button type="button" onClick={() => void removePlatform(platform)} aria-label={`Remover ${platform.name}`} title={`Remover ${platform.name}`} className="grid size-7 place-items-center rounded-md text-cyan-200 transition hover:bg-red-500/15 hover:text-red-300"><Trash2 className="size-3.5" /></button></span>)}</div> : <Empty title="Nenhum console adicionado" description="Adicione os consoles que você tem para ver quais jogos são compatíveis." />}</Tabs.Content>
         </Tabs.Root>
     </div>
+  );
+}
+
+function GameSearchResult({ game, added, label, onAdd }: { game: Game; added: boolean; label: string; onAdd: () => void }) {
+  const rating = game.average_rating === null || game.average_rating === undefined ? null : (game.average_rating / 10).toLocaleString('pt-BR', { maximumFractionDigits: 1 });
+  return (
+    <article className="flex min-w-0 gap-3 rounded-xl border border-white/8 bg-white/[0.025] p-3">
+      <Link href={`/jogos/${game.id}?preview=1`} aria-label={`Ver detalhes de ${game.title}`} className="h-20 w-14 shrink-0 overflow-hidden rounded-lg bg-zinc-900 transition hover:ring-2 hover:ring-violet-400/60">
+        <img src={game.image_url} alt={`Capa de ${game.title}`} className="size-full object-cover" />
+      </Link>
+      <div className="min-w-0 flex-1">
+        <h3 className="break-words text-sm font-bold leading-5 text-zinc-100">{game.title}</h3>
+        <div className="mt-2 flex items-end justify-between gap-3">
+          <div className="flex min-w-0 flex-wrap gap-1.5 text-[11px] font-semibold text-zinc-400">
+            <span className="inline-flex items-center gap-1 rounded-md bg-white/[.07] px-2 py-1"><Clock3 className="size-3 text-zinc-500" />{game.duration_hours} h</span>
+            {rating && <span className="inline-flex items-center gap-1 rounded-md bg-white/[.07] px-2 py-1 text-amber-300"><Star className="size-3 fill-current" />{rating}</span>}
+            {game.release_year && <span className="inline-flex items-center gap-1 rounded-md bg-white/[.07] px-2 py-1"><CalendarDays className="size-3 text-zinc-500" />{game.release_year}</span>}
+          </div>
+          <button disabled={added} onClick={onAdd} type="button" className="shrink-0 rounded-lg bg-violet-500/15 px-3 py-2 text-[11px] font-bold text-violet-300 transition hover:bg-violet-500 hover:text-white disabled:text-emerald-300">{label}</button>
+        </div>
+      </div>
+    </article>
   );
 }
 
